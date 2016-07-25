@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Segmentation.MS Lesion Track</category>
+  <title>Bayesian DTI Segmentation</title>
+  <description><![CDATA[This is a CLI module aims to segment multiple sclerosis brain lesions based on DTI scalar maps, namely FA, MD, Trace and others. This module apply the Baeysian classifier with spatial lesion distribution priors on the input image to select abnormal pixel variations in the white matter tissue. The user must provide the DTI map already registered with the ICBM standard space, which could be achieved using the ICBM-DTI-81 template.]]></description>
+  <version>0.0.1</version>
+  <documentation-url>https://www.slicer.org/slicerWiki/index.php/Documentation/Nightly/Modules/BayesianDTISegmentation</documentation-url>
+  <license>Slicer</license>
+  <contributor>Antonio Carlos da S. Senra Filho (University of Sao Paulo), Luiz Otavio Murta Junior (University of Sao Paulo)</contributor>
+  <acknowledgements>This work was partially funded by CNPq grant 201871/2015-7/SWE and CAPES.</acknowledgements>
+  <parameters>
+    <label>IO</label>
+    <description><![CDATA[Input/output parameters]]></description>
+    <image>
+      <name>inputVolume</name>
+      <label>Input Volume</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description><![CDATA[Input volume]]></description>
+    </image>
+    <image type="label">
+      <name>outputLabel</name>
+      <label>Output Label</label>
+      <channel>output</channel>
+      <index>1</index>
+      <description><![CDATA[Output Label]]></description>
+    </image>
+  </parameters>
+  <parameters>
+  <label>Segmentation Parameters</label>
+  <description><![CDATA[Parameters to set the Bayesian tissue segmentation procedure.]]></description>
+	<string-enumeration>
+	      <name>priorsImage</name>
+	      <longflag>--priors</longflag>
+	      <description><![CDATA[Choose the priors distribution]]></description>
+	      <label>Priors Distribution</label>
+	      <default>Unconditional</default>
+	      <element>Unconditional</element>
+	      <element>Multiple Sclerosis DTI Lesions</element>
+	</string-enumeration>
+    <string-enumeration>
+      <name>mapType</name>
+	<longflag>--diffMap</longflag>
+	<description><![CDATA[Choose the diffusion map inserted in the input image field.]]></description>
+	<label>Diffusion Map Type</label>
+	<default>FractionalAnisotropy</default>
+	<element>FractionalAnisotropy</element>
+	<element>MeanDiffusivity</element>
+	<element>RelativeAnisotropy</element>
+	<element>PerpendicularDiffusivity</element>
+	<element>ParallelDiffusivity</element>
+    </string-enumeration>
+    <string-enumeration>
+      <name>mapResolution</name>
+	<longflag>--diffMapRes</longflag>
+	<description><![CDATA[Choose the diffusion map resolution.]]></description>
+	<label>Diffusion Map Resolution</label>
+	<default>2mm</default>
+	<element>2mm</element>
+	<element>1mm</element>
+    </string-enumeration>
+  </parameters>
+</executable>

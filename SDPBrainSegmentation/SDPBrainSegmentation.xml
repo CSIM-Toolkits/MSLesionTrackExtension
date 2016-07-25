@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Segmentation.MS Lesion Track</category>
+  <title>SDP Brain Segmentation</title>
+  <description><![CDATA[This is a CLI module aims to segment multiple sclerosis brain lesions using a statistical DTI voxel inference based on statistical DTI atlas provided by USP-ICBM-100 template. The user must provide the DTI map already registered with the ICBM standard space, which could be achieved using the ICBM-DTI-81 template. ]]></description>
+  <version>0.0.1</version>
+  <documentation-url>https://www.slicer.org/slicerWiki/index.php/Documentation/Nightly/Modules/SDPBrainSegmentation</documentation-url>
+  <license>Slicer</license>
+  <contributor>Antonio Carlos da S. Senra Filho (University of Sao Paulo), Luiz Otavio Murta Junior (University of Sao Paulo)</contributor>
+  <acknowledgements>This work was partially funded by CNPq grant 201871/2015-7/SWE and CAPES.</acknowledgements>
+  <parameters>
+    <label>IO</label>
+    <description><![CDATA[Input/output parameters]]></description>
+    <image>
+      <name>inputVolume</name>
+      <label>Input DTI Map</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description><![CDATA[Input volume]]></description>
+    </image>
+    <string-enumeration>
+      <name>mapType</name>
+	<longflag>--diffMap</longflag>
+	<description><![CDATA[Choose the diffusion map inserted in the input image field.]]></description>
+	<label>Diffusion Map Type</label>
+	<default>FractionalAnisotropy</default>
+	<element>FractionalAnisotropy</element>
+	<element>MeanDiffusivity</element>
+	<element>RelativeAnisotropy</element>
+	<element>PerpendicularDiffusivity</element>
+	<element>ParallelDiffusivity</element>
+    </string-enumeration>
+    <string-enumeration>
+      <name>mapResolution</name>
+	<longflag>--diffMapRes</longflag>
+	<description><![CDATA[Choose the diffusion map resolution.]]></description>
+	<label>Diffusion Map Resolution</label>
+	<default>2mm</default>
+	<element>2mm</element>
+	<element>1mm</element>
+    </string-enumeration>
+    <image type="label">
+      <name>outputLabel</name>
+      <label>Output Label</label>
+      <channel>output</channel>
+      <index>1</index>
+      <description><![CDATA[Output Label]]></description>
+    </image>    
+  </parameters>
+  <parameters>
+    <label>Statistical Segmentation Approach</label>
+    <description><![CDATA[Statistical segmentation approach to be applied on the input images]]></description>
+    <string-enumeration>
+      <name>statMethod</name>
+	<longflag>--statMethod</longflag>
+	<description><![CDATA[Choose the statistical method that will be used to select the abnormal voxel values in the input image.]]></description>
+	<label>Statistial Method</label>
+	<default>Z-Score</default>
+	<element>QEntropy</element>
+	<element>Z-Score</element>
+    </string-enumeration>
+    <float>
+      <name>zThreshold</name>
+	<longflag>--zThr</longflag>
+	<description><![CDATA[Choose the z-score limiar where the voxel sould be classified as an abnormal one. This option will only takes effect if the Z-Score options is chosen in the Statistical Segmentation Approach section.]]></description>
+	<label>Z-Score Threshold</label>
+	<default>1</default>
+	<constraints>
+ 	<minimum>0.1</minimum>
+	<maximum>25</maximum>
+	<step>0.1</step>
+	</constraints>
+    </float>
+  </parameters>
+</executable>
