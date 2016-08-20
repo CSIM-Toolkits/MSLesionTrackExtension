@@ -21,7 +21,7 @@ include(${Slicer_USE_FILE})
 add_subdirectory(BrainTissuesMask)
 add_subdirectory(BrainExtractionTool)
 add_subdirectory(DTILesionTrack)
-add_subdirectory(SDPBrainSegmentation)
+add_subdirectory(LSDPBrainSegmentation)
 add_subdirectory(BayesianDTISegmentation)
 add_subdirectory(MRFDTISegmentation)
 ## NEXT_MODULE

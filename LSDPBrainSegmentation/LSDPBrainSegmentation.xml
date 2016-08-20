@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
   <category>Segmentation.MS Lesion Track</category>
-  <title>SDP Brain Segmentation</title>
-  <description><![CDATA[This is a CLI module aims to segment multiple sclerosis brain lesions using a statistical DTI voxel inference based on statistical DTI atlas provided by USP-ICBM-100 template. The user must provide the DTI map already registered with the ICBM standard space, which could be achieved using the ICBM-DTI-81 template. ]]></description>
+  <title>LSDP Brain Segmentation</title>
+  <description><![CDATA[This is a CLI module aims to segment multiple sclerosis brain lesions using a statistical DTI voxel-wise inference based on statistical DTI atlas provided by USP-ICBM-131 template. The user must provide the DTI map already registered with the ICBM standard space, which could be achieved using the JHU-ICBM-DTI-81 or USP-DTI-131 templates. ]]></description>
   <version>0.0.1</version>
   <documentation-url>https://www.slicer.org/slicerWiki/index.php/Documentation/Nightly/Modules/SDPBrainSegmentation</documentation-url>
   <license>Slicer</license>
@@ -18,6 +18,12 @@
       <index>0</index>
       <description><![CDATA[Input volume]]></description>
     </image>
+    <image type="label">
+      <name>inputLabel</name>
+      <label>Input Lesion Map</label>
+      <channel>input</channel>
+      <description><![CDATA[Input lesion map]]></description>
+    </image>
     <string-enumeration>
       <name>mapType</name>
 	<longflag>--diffMap</longflag>
@@ -28,7 +34,7 @@
 	<element>MeanDiffusivity</element>
 	<element>RelativeAnisotropy</element>
 	<element>PerpendicularDiffusivity</element>
-	<element>ParallelDiffusivity</element>
+	<element>VolumeRatio</element>
     </string-enumeration>
     <string-enumeration>
       <name>mapResolution</name>
@@ -55,16 +61,16 @@
 	<longflag>--statMethod</longflag>
 	<description><![CDATA[Choose the statistical method that will be used to select the abnormal voxel values in the input image.]]></description>
 	<label>Statistial Method</label>
-	<default>Z-Score</default>
+	<default>T-Score</default>
 	<element>QEntropy</element>
-	<element>Z-Score</element>
+	<element>T-Score</element>
     </string-enumeration>
     <float>
-      <name>zThreshold</name>
-	<longflag>--zThr</longflag>
-	<description><![CDATA[Choose the z-score limiar where the voxel sould be classified as an abnormal one. This option will only takes effect if the Z-Score options is chosen in the Statistical Segmentation Approach section.]]></description>
-	<label>Z-Score Threshold</label>
-	<default>1</default>
+      <name>tThreshold</name>
+	<longflag>--tThr</longflag>
+	<description><![CDATA[Choose the T-score threshold where the voxel sould be classified as an abnormal one.]]></description>
+	<label>T-Score Threshold</label>
+	<default>2.5</default>
 	<constraints>
  	<minimum>0.1</minimum>
 	<maximum>25</maximum>
