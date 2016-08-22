@@ -22,6 +22,7 @@
       <name>inputLabel</name>
       <label>Input Lesion Map</label>
       <channel>input</channel>
+      <index>2</index>
       <description><![CDATA[Input lesion map]]></description>
     </image>
     <string-enumeration>
@@ -49,7 +50,7 @@
       <name>outputLabel</name>
       <label>Output Label</label>
       <channel>output</channel>
-      <index>1</index>
+      <index>3</index>
       <description><![CDATA[Output Label]]></description>
     </image>    
   </parameters>
