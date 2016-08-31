@@ -194,12 +194,21 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         #
         # Output Lesion Mask Area
         #
-        self.setOutputLesionMaskBooleanWidget = ctk.ctkComboBox()
-        self.setOutputLesionMaskBooleanWidget.addItem("Global")
-        self.setOutputLesionMaskBooleanWidget.addItem("Separable")
-        self.setOutputLesionMaskBooleanWidget.setToolTip(
-            "Choose if you want to separate the lesions by different label masks or display as a global lesion label mask.")
-        parametersOutputFormLayout.addRow("Output Lesion Mask ", self.setOutputLesionMaskBooleanWidget)
+        # self.setOutputLesionMaskBooleanWidget = ctk.ctkComboBox()
+        # self.setOutputLesionMaskBooleanWidget.addItem("Global")
+        # self.setOutputLesionMaskBooleanWidget.addItem("Separable")
+        # self.setOutputLesionMaskBooleanWidget.setToolTip(
+        #     "Choose if you want to separate the lesions by different label masks or display as a global lesion label mask.")
+        # parametersOutputFormLayout.addRow("Output Lesion Mask ", self.setOutputLesionMaskBooleanWidget)
+
+        #
+        # Brain extraction on T1 and FLAIR
+        #
+        self.setApplyBrainExtractedBooleanWidget = ctk.ctkCheckBox()
+        self.setApplyBrainExtractedBooleanWidget.setChecked(True)
+        self.setApplyBrainExtractedBooleanWidget.setToolTip(
+            "Apply previous brain extraction step before move on the registration process. If the input T1 and FLAIR images are already brain extracted, you can leave this step blank.")
+        parametersOutputFormLayout.addRow("Apply brain extraction on T1 and FLAIR", self.setApplyBrainExtractedBooleanWidget)
 
         #
         # Advanced Parameters Area
@@ -260,6 +269,16 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         # self.setBSplineGridSizeWidget.setToolTip(" Options: Linear, Tri-linear and Spline")
         # parametersAdvancedFormLayout.addRow("Template Spatial Resolution ", self.setBSplineGridSizeWidget)
 
+        #
+        # Fast Registration Strategy
+        #
+        self.setFastRegistrationBooleanWidget = ctk.ctkCheckBox()
+        self.setFastRegistrationBooleanWidget.setChecked(True)
+        self.setFastRegistrationBooleanWidget.setToolTip(
+            "Calculate all the registration process in the 2mm resolution and, when its finishes, the image is interpolated to 1mm.")
+        parametersOutputFormLayout.addRow("Use Fast Registration Strategy",
+                                          self.setFastRegistrationBooleanWidget)
+
         # #
         # # Estimates Patient Lesion Load Area
         # #
@@ -271,12 +290,13 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         #
         # Statistical Analysis Area
         #
-        self.setStatisticalAnalysisWidget = ctk.ctkComboBox()
-        self.setStatisticalAnalysisWidget.addItem("LSDP")
-        self.setStatisticalAnalysisWidget.addItem("Bayesian")
-        self.setStatisticalAnalysisWidget.setToolTip(
-            "Choose the DTI template where the input images will be registered. Options: Local Statistical Diffusibility Properties (LSDP), Bayesian ...")
-        parametersAdvancedFormLayout.addRow("Statistical Analysis ", self.setStatisticalAnalysisWidget)
+        self.setSegmentationApproachWidget = ctk.ctkComboBox()
+        self.setSegmentationApproachWidget.addItem("LSDP")
+        self.setSegmentationApproachWidget.addItem("SpatialClustering")
+        self.setSegmentationApproachWidget.addItem("Bayesian")
+        self.setSegmentationApproachWidget.setToolTip(
+            "Choose the DTI template where the input images will be registered. Options: Local Statistical Diffusibility Properties (LSDP), Spatial Clustering Outlier, Bayesian ...")
+        parametersAdvancedFormLayout.addRow("Segmentation Approach ", self.setSegmentationApproachWidget)
 
         #
         # Apply Button
@@ -313,12 +333,12 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
                   , self.inputPerDSelector.currentNode()
                   , self.inputVRSelector.currentNode()
                   , self.outputSelector.currentNode()
-                  , self.setOutputLesionMaskBooleanWidget
-                  , self.setWhiteMatterTracksBooleanWidget
+                  , self.setApplyBrainExtractedBooleanWidget
                   , self.setInterpolationMethodBooleanWidget
                   , self.setTemplateResolutionBooleanWidget.currentText
                   , self.setDTITemplateWidget.currentText
-                  , self.setStatisticalAnalysisWidget.currentText
+                  , self.setFastRegistrationBooleanWidget
+                  , self.setSegmentationApproachWidget.currentText
                   )
 
 
@@ -365,8 +385,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         return True
 
     def run(self, inputFLAIRVolume, inputT1Volume, inputFAVolume, inputMDVolume, inputRAVolume, inputPerDVolume,
-            inputVRVolume, outputLabelVolume, outputLesionMaskComboBox, whiteMatterMaskType, interpolationMethod,
-            templateDTIResolution, templateDTI, statisticalAnalysis):
+            inputVRVolume, outputLabelVolume, applyBET, interpolationMethod,
+            templateDTIResolution, templateDTI, segmentationApproach, useFastRegistration):
         """
     Run the actual algorithm
     """
@@ -374,13 +394,45 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         slicer.util.showStatusMessage("Processing started")
         mapsCount=1
 
-        slicer.util.showStatusMessage("Step 1: Reading DTI Template...")
+        #################################################################################################################
+        #                   Start the pre-processing step: Brain extraction (optional) and Registration                 #
+        #################################################################################################################
+
+        # Check if the input images are already brain extracted. If not, apply a brain extraction on both.
+        if applyBET.isChecked():
+            slicer.util.showStatusMessage("Pre-processing: Extraction brain from T1 and FLAIR images...")
+            #
+            # T1 brain extraction
+            #
+            betParams = {}
+            betParams["inputVolume"] = inputT1Volume.GetID()
+            betParams["outputVolume"] = inputT1Volume.GetID()
+
+            slicer.cli.run(slicer.modules.brainextractiontool, None, betParams, wait_for_completion=True)
+
+            #
+            # FLAIR brain extraction
+            #
+            betParams = {}
+            betParams["inputVolume"] = inputFLAIRVolume.GetID()
+            betParams["outputVolume"] = inputFLAIRVolume.GetID()
+
+            slicer.cli.run(slicer.modules.brainextractiontool, None, betParams, wait_for_completion=True)
+
+        # Perform fast registration strategy? (Do always the registration over 2mm and interpolate to 1mm after warped)
+        # TODO PRECISA TERMINAR ESTA IDEIA!!!!!!
+        if useFastRegistration.isChecked():
+            # DO ALL THE REGISTRATION IN 2MM
+        else
+        #     DO NORMALLY
+
+        slicer.util.showStatusMessage("Step 1/5: Reading DTI Template...")
         if platform.system() is "Windows":
             home = expanduser("%userprofile%")
         else:
             home = expanduser("~")
 
-        # Register images with the DTI template (interpolation, template resolution)
+
         if platform.system() is "Windows":
             if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
                 DTITemplate = slicer.util.loadVolume(
@@ -499,149 +551,131 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 T1TemplateMask = "MNI152_T1_2mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_2mm_brain"
 
-        slicer.util.showStatusMessage("Step 2: Registering the input volumes to ICBM space...")
+        slicer.util.showStatusMessage("Step 2/5: Registering input volumes...")
 
-        slicer.util.showStatusMessage("Registering T1 image...")
         #
-        # Registering the T1 image with the MNI-152 template.
+        # Registering the T1 image to FLAIR image.
         #
-        registrationT1Transform = slicer.vtkMRMLBSplineTransformNode()
-        slicer.mrmmrmlScene.AddNode(registrationT1Transform)
+        slicer.util.showStatusMessage("Step 2/5: T1 registration...")
+        registrationT12FLAIRTransform = slicer.vtkMRMLLinearTransformNode()
+        slicer.mrmlScene.AddNode(registrationT12FLAIRTransform)
         inputT1Volume_reg = slicer.vtkMRMLScalarVolumeNode()
         slicer.mrmlScene.AddNode(inputT1Volume_reg)
         regParams = {}
-        regParams["fixedVolume"] = slicer.util.getNode(T1TemplateBrain)
+        regParams["fixedVolume"] = inputFLAIRVolume.GetID() #slicer.util.getNode(T1TemplateBrain)
         regParams["movingVolume"] = inputT1Volume.GetID()
         regParams["samplingPercentage"] = 0.02
         regParams["splineGridSize"] = '14,10,12'
         regParams["outputVolume"] = inputT1Volume_reg.GetID()
-        regParams["bsplineTransform"] = registrationT1Transform.GetID()
+        regParams["linearTransform"] = registrationT12FLAIRTransform.GetID()
         regParams["initializeTransformMode"] = "useMomentsAlign"
-        regParams["useRigid"] = True
         regParams["useAffine"] = True
-        regParams["useBSpline"] = True
         regParams["interpolationMode"] = interpolationMethod.currentText
         regParams["numberOfSamples"] = 200000
 
-        # slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
+        slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
+
 
         #
-        # Registering the FLAIR image with the MNI-152 template.
+        # Registering the DTI-FA to FLAIR image
         #
-        registrationFLAIRTransform = slicer.vtkMRMLBSplineTransformNode()
-        slicer.mrmmrmlScene.AddNode(registrationFLAIRTransform)
-        inputFLAIRVolume_reg = slicer.vtkMRMLScalarVolumeNode()
-        slicer.mrmlScene.AddNode(inputFLAIRVolume_reg)
-        regParams = {}
-        regParams["fixedVolume"] = slicer.util.getNode(T1TemplateBrain)
-        regParams["movingVolume"] = inputFLAIRVolume.GetID()
-        regParams["samplingPercentage"] = 0.02
-        regParams["splineGridSize"] = '14,10,12'
-        regParams["outputVolume"] = inputFLAIRVolume_reg.GetID()
-        regParams["bsplineTransform"] = registrationFLAIRTransform.GetID()
-        regParams["initializeTransformMode"] = "useMomentsAlign"
-        regParams["useRigid"] = True
-        regParams["useAffine"] = True
-        regParams["useBSpline"] = True
-        regParams["interpolationMode"] = interpolationMethod.currentText
-        regParams["numberOfSamples"] = 200000
-
-        # slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
-
-        slicer.util.showStatusMessage("Registering FA map...")
-        #
-        # Registering the FA image with the MNI-DTI template.
-        #
-        registrationFATransform = slicer.vtkMRMLBSplineTransformNode()
-        slicer.mrmmrmlScene.AddNode(registrationFATransform)
+        slicer.util.showStatusMessage("Step 2/5: DTI-FA registration...")
+        registrationDTI2FLAIRTransform = slicer.vtkMRMLLinearTransformNode()
+        slicer.mrmlScene.AddNode(registrationDTI2FLAIRTransform)
         inputFAVolume_reg = slicer.vtkMRMLScalarVolumeNode()
         slicer.mrmlScene.AddNode(inputFAVolume_reg)
         regParams = {}
-        regParams["fixedVolume"] = slicer.util.getNode(DTITemplateNodeName)
+        regParams["fixedVolume"] = inputFLAIRVolume.GetID()
         regParams["movingVolume"] = inputFAVolume.GetID()
         regParams["samplingPercentage"] = 0.02
         regParams["splineGridSize"] = '14,10,12'
         regParams["outputVolume"] = inputFAVolume_reg.GetID()
-        regParams["bsplineTransform"] = registrationFATransform.GetID()
+        regParams["linearTransform"] = registrationDTI2FLAIRTransform.GetID()
         regParams["initializeTransformMode"] = "useMomentsAlign"
-        regParams["useRigid"] = True
         regParams["useAffine"] = True
-        regParams["useBSpline"] = True
         regParams["interpolationMode"] = interpolationMethod.currentText
         regParams["numberOfSamples"] = 200000
 
-        # slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
+        slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
 
         #
-        # CRIAR LABEL USANDO O LST !!!!!!!!!!! FLAIR JA NO ICBM, ENTAO LABEL JA VAI ESTAR NO ESPACO CORRETO !!!!!!
+        # Registering the MNI-DTI template to FA native space.
         #
 
+        # Demon Diffeomorphic Registration
+        slicer.util.showStatusMessage("Step 2/5: DTI ICBM template registration...")
+        registrationTemplateTransform = slicer.vtkMRMLGridTransformNode()
+        slicer.mrmlScene.AddNode(registrationTemplateTransform)
+        inputTemplateVolume_reg = slicer.vtkMRMLScalarVolumeNode()
+        slicer.mrmlScene.AddNode(inputTemplateVolume_reg)
+        regParams = {}
+        regParams["fixedVolume"] = inputFAVolume_reg.GetID()
+        regParams["movingVolume"] = slicer.util.getNode(DTITemplateNodeName)
+        regParams["samplingPercentage"] = 0.02
+        regParams["outputVolume"] = inputTemplateVolume_reg.GetID()
+        regParams["outputDisplacementFieldVolume"] = registrationTemplateTransform.GetID()
+        regParams["interpolationMode"] = interpolationMethod.currentText
+
+        slicer.cli.run(slicer.modules.brainsdemonwarp, None, regParams, wait_for_completion=True)
 
 
         #
         # Applying registration transform - MD Volume
         #
         if inputMDVolume != None:
-            slicer.util.showStatusMessage("Registering MD map...")
             mapsCount=mapsCount+1
             #
             # Registering the MD image with the MNI-DTI template.
             #
             # USE THE BSPLINE TRANSFORM IN THE FA MAP TO WARP THE REST OF THE INPUT IMAGES
+            slicer.util.showStatusMessage("Step 2/5: DTI-MD registration...")
             inputMDVolume_reg = slicer.vtkMRMLScalarVolumeNode()
             slicer.mrmlScene.AddNode(inputMDVolume_reg)
             resampMDParams = {}
             resampMDParams["inputVolume"] = inputMDVolume.GetID()
-            resampMDParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
+            resampMDParams["referenceVolume"] = inputFLAIRVolume.GetID()
             resampMDParams["outputVolume"] = inputMDVolume_reg.GetID()
-            resampMDParams["warpTransform"] = registrationFATransform.GetID()
+            resampMDParams["warpTransform"] = registrationDTI2FLAIRTransform.GetID()
             resampMDParams["interpolationMode"] = interpolationMethod.currentText
-            # Parameter(0 / 0): inputVolume(ImageTo Warp)
-            # Parameter(0 / 1): referenceVolume(Reference Image)
-            # Parameter(1 / 0): outputVolume(Output Image)
-            # Parameter(1 / 1): pixelType(Pixel Type)
-            # Parameter(2 / 0): deformationVolume(Displacement Field(deprecated))
-            # Parameter(2 / 1): warpTransform(Transform file)
-            # Parameter(2 / 2): interpolationMode(Interpolation Mode)
 
-            # slicer.cli.run(slicer.modules.brainsresample, None, resampMDParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.brainsresample, None, resampMDParams, wait_for_completion=True)
 
         #
         # Applying registration transform - RA Volume
         #
         if inputRAVolume != None:
-            slicer.util.showStatusMessage("Registering RA map...")
             mapsCount=mapsCount+1
             #
             # Registering the RA image with the MNI-DTI template.
             #
+            slicer.util.showStatusMessage("Step 2/5: DTI-RA registration...")
             inputRAVolume_reg = slicer.vtkMRMLScalarVolumeNode()
             slicer.mrmlScene.AddNode(inputRAVolume_reg)
             resampRAParams = {}
             resampRAParams["inputVolume"] = inputRAVolume.GetID()
-            resampRAParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
+            resampRAParams["referenceVolume"] = inputFLAIRVolume.GetID()
             resampRAParams["outputVolume"] = inputRAVolume_reg.GetID()
-            resampRAParams["warpTransform"] = registrationFATransform.GetID()
+            resampRAParams["warpTransform"] = registrationDTI2FLAIRTransform.GetID()
             resampRAParams["interpolationMode"] = interpolationMethod.currentText
 
-            # slicer.cli.run(slicer.modules.brainsresample, None, resampRAParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.brainsresample, None, resampRAParams, wait_for_completion=True)
 
         #
         # Applying registration transform - Perpendicular Diffusivity Volume
         #
         if inputPerDVolume != None:
-            slicer.util.showStatusMessage("Registering Perpendicular Diffusivity map...")
             mapsCount=mapsCount+1
             #
             # Registering the Per Diff image with the MNI-DTI template.
             #
+            slicer.util.showStatusMessage("Step 2/5: DTI-PerpDiff registration...")
             inputPerDVolume_reg = slicer.vtkMRMLScalarVolumeNode()
             slicer.mrmlScene.AddNode(inputPerDVolume_reg)
             resampPerDParams = {}
             resampPerDParams["inputVolume"] = inputPerDVolume.GetID()
-            resampPerDParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
+            resampPerDParams["referenceVolume"] = inputFLAIRVolume.GetID()
             resampPerDParams["outputVolume"] = inputPerDVolume_reg.GetID()
-            resampPerDParams["warpTransform"] = registrationFATransform.GetID()
+            resampPerDParams["warpTransform"] = registrationDTI2FLAIRTransform.GetID()
             resampPerDParams["interpolationMode"] = interpolationMethod.currentText
 
             slicer.cli.run(slicer.modules.brainsresample, None, resampPerDParams, wait_for_completion=True)
@@ -650,115 +684,52 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         # Applying registration transform - VR Volume
         #
         if inputVRVolume != None:
-            slicer.util.showStatusMessage("Registering Volume Ratio map...")
             mapsCount=mapsCount+1
             #
             # Registering the Per Diff image with the MNI-DTI template.
             #
+            slicer.util.showStatusMessage("Step 2/5: DTI-VR registration...")
             inputVRVolume_reg = slicer.vtkMRMLScalarVolumeNode()
             slicer.mrmlScene.AddNode(inputVRVolume_reg)
             resampVRParams = {}
             resampVRParams["inputVolume"] = inputVRVolume.GetID()
-            resampVRParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
+            resampVRParams["referenceVolume"] = inputFLAIRVolume.GetID()
             resampVRParams["outputVolume"] = inputVRVolume_reg.GetID()
-            resampVRParams["warpTransform"] = registrationFATransform.GetID()
+            resampVRParams["warpTransform"] = registrationDTI2FLAIRTransform.GetID()
             resampVRParams["interpolationMode"] = interpolationMethod.currentText
 
-            # slicer.cli.run(slicer.modules.brainsresample, None, resampVRParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.brainsresample, None, resampVRParams, wait_for_completion=True)
+
+        #################################################################################################################
+        #                 Initial lesion map aproximation given by the hyperintense lesion of FLAIR image               #
+        #################################################################################################################
+        slicer.util.showStatusMessage("Step 3/5: Initial lesion map aproximation...")
+        # TODO mat
 
         #
-        # Prepare the white matter mask from MNI152-T1
+        # CRIAR LABEL USANDO O LST !!!!!!!!!!! TODAS AS IMAGENS ESTAO NO ESPACO DA FLAIR, ENTAO LST VAI PASSAR PARA O ESPACO NATIVO !!!!!!
         #
 
-        slicer.util.showStatusMessage("Step 3: Masking the white matter in the input volumes ")
 
-        slicer.util.showStatusMessage("Masking Fractional Anisotropy white matter volume...")
-        #
-        # FA White Matter
-        #
-        inputFAVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
-        slicer.mrmlScene.AddNode(inputFAVolume_reg_wm)
-        applyFAMaskParams = {}
-        applyFAMaskParams["InputVolume"] = inputFAVolume_reg.GetID()
-        applyFAMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
-        applyFAMaskParams["Label"] = 3
-        applyFAMaskParams["OutputVolume"] = inputFAVolume_reg_wm.GetID()
-
-        # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyFAMaskParams, wait_for_completion=True)
-
-
-        if inputMDVolume != None:
-            slicer.util.showStatusMessage("Masking Mean Diffusivity white matter volume...")
-            #
-            # MD White Matter
-            #
-            inputMDVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
-            slicer.mrmlScene.AddNode(inputMDVolume_reg_wm)
-            applyMDMaskParams = {}
-            # applyMDMaskParams["InputVolume"] = inputMDNode_reg.GetID()
-            applyMDMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
-            applyMDMaskParams["Label"] = 3
-            applyMDMaskParams["OutputVolume"] = inputMDVolume_reg_wm.GetID()
-
-            # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyMDMaskParams, wait_for_completion=True)
-
-        if inputRAVolume != None:
-            slicer.util.showStatusMessage("Masking Relative Anisotropy white matter volume...")
-            #
-            # RA White Matter
-            #
-            inputRAVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
-            slicer.mrmlScene.AddNode(inputRAVolume_reg_wm)
-            applyRAMaskParams = {}
-            applyRAMaskParams["InputVolume"] = inputRAVolume_reg.GetID()
-            applyRAMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
-            applyRAMaskParams["Label"] = 3
-            applyRAMaskParams["OutputVolume"] = inputRAVolume_reg_wm.GetID()
-
-            # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyRAMaskParams, wait_for_completion=True)
-
-        if inputPerDVolume != None:
-            slicer.util.showStatusMessage("Masking Perpendicular Diffusivity white matter volume...")
-            #
-            # Perpendicular Diffusivity White Matter
-            #
-            inputPerDVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
-            slicer.mrmlScene.AddNode(inputPerDVolume_reg_wm)
-            applyPerDMaskParams = {}
-            applyPerDMaskParams["InputVolume"] = inputPerDVolume_reg.GetID()
-            applyPerDMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
-            applyPerDMaskParams["Label"] = 3
-            applyPerDMaskParams["OutputVolume"] = inputPerDVolume_reg_wm.GetID()
-
-            # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyPerDMaskParams, wait_for_completion=True)
-
-        if inputVRVolume != None:
-            slicer.util.showStatusMessage("Masking Volume Ratio white matter volume...")
-            #
-            # Parallel Diffusivity White Matter
-            #
-            inputVRVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
-            slicer.mrmlScene.AddNode(inputVRVolume_reg_wm)
-            applyVRMaskParams = {}
-            applyVRMaskParams["InputVolume"] = inputVRVolume_reg.GetID()
-            applyVRMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
-            applyVRMaskParams["Label"] = 3
-            applyVRMaskParams["OutputVolume"] = inputVRVolume_reg_wm.GetID()
-
-            # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyVRMaskParams, wait_for_completion=True)
-
+        #################################################################################################################
+        # The pre-processing is done. Below are the evaluated the lesion maps based on the chosen Statistical Analaysis #
+        #################################################################################################################
+        #################################################################################################################
+        #                                    Apply the chosen segmentation approach                                     #
+        #################################################################################################################
 
         # Perform the statistical segmentation based on all the input data
-        if (statisticalAnalysis == 'LSDP'):
+        #
+        if (segmentationApproach == 'LSDP'):
 
-            slicer.util.showStatusMessage("Step 4: Performing LSDP segmentation on all data...")
+            slicer.util.showStatusMessage("Step 5/5: Performing LSDP segmentation on all data...")
             #
             # Perform the statistical segmentation - FA map
             #
             outputFALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
             slicer.mrmlScene.AddNode(outputFALesionLabelNode)
             statisticalFASegmentationParams = {}
-            statisticalFASegmentationParams["inputVolume"] = inputFAVolume_reg_wm.GetID()
+            statisticalFASegmentationParams["inputVolume"] = inputFAVolume_reg.GetID()
             # statisticalFASegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
             statisticalFASegmentationParams["mapType"] = "FracionalAnisotropy"
             statisticalFASegmentationParams["mapResolution"] = templateDTIResolution
@@ -768,70 +739,75 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
 
             # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalFASegmentationParams, wait_for_completion=True)
 
-            #
-            # Perform the statistical segmentation - MD map
-            #
-            outputMDLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
-            statisticalMDSegmentationParams = {}
-            statisticalMDSegmentationParams["inputVolume"] = inputMDVolume_reg_wm.GetID()
-            # statisticalMDSegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
-            statisticalMDSegmentationParams["mapType"] = "MeanDiffusivity"
-            statisticalMDSegmentationParams["mapResolution"] = templateDTIResolution
-            statisticalMDSegmentationParams["statMethod"] = "T-Score"
-            statisticalMDSegmentationParams["tThreshold"] = 5.0
-            statisticalMDSegmentationParams["outputLabelVolume"] = outputMDLesionLabelNode.GetID()
+            if inputMDVolume != None:
+                #
+                # Perform the statistical segmentation - MD map
+                #
+                outputMDLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
+                slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
+                statisticalMDSegmentationParams = {}
+                statisticalMDSegmentationParams["inputVolume"] = inputMDVolume_reg.GetID()
+                # statisticalMDSegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
+                statisticalMDSegmentationParams["mapType"] = "MeanDiffusivity"
+                statisticalMDSegmentationParams["mapResolution"] = templateDTIResolution
+                statisticalMDSegmentationParams["statMethod"] = "T-Score"
+                statisticalMDSegmentationParams["tThreshold"] = 5.0
+                statisticalMDSegmentationParams["outputLabelVolume"] = outputMDLesionLabelNode.GetID()
 
-            # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalMDSegmentationParams, wait_for_completion=True)
+                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalMDSegmentationParams, wait_for_completion=True)
 
-            #
-            # Perform the statistical segmentation - RA map
-            #
-            outputRALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            slicer.mrmlScene.AddNode(outputRALesionLabelNode)
-            statisticalRASegmentationParams = {}
-            statisticalRASegmentationParams["inputVolume"] = inputRAVolume_reg_wm.GetID()
-            # statisticalRASegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
-            statisticalRASegmentationParams["mapType"] = "RelativeAnisotropy"
-            statisticalRASegmentationParams["mapResolution"] = templateDTIResolution
-            statisticalRASegmentationParams["statMethod"] = "T-Score"
-            statisticalRASegmentationParams["tThreshold"] = 5.0
-            statisticalRASegmentationParams["outputLabelVolume"] = outputRALesionLabelNode.GetID()
+            if inputRAVolume != None:
+                #
+                # Perform the statistical segmentation - RA map
+                #
+                outputRALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
+                slicer.mrmlScene.AddNode(outputRALesionLabelNode)
+                statisticalRASegmentationParams = {}
+                statisticalRASegmentationParams["inputVolume"] = inputRAVolume_reg.GetID()
+                # statisticalRASegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
+                statisticalRASegmentationParams["mapType"] = "RelativeAnisotropy"
+                statisticalRASegmentationParams["mapResolution"] = templateDTIResolution
+                statisticalRASegmentationParams["statMethod"] = "T-Score"
+                statisticalRASegmentationParams["tThreshold"] = 5.0
+                statisticalRASegmentationParams["outputLabelVolume"] = outputRALesionLabelNode.GetID()
 
-            # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalRASegmentationParams, wait_for_completion=True)
+                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalRASegmentationParams, wait_for_completion=True)
 
-            #
-            # Perform the statistical segmentation - Perpendicular Diffusivity map
-            #
-            outputPerDLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
-            statisticalPerDSegmentationParams = {}
-            statisticalPerDSegmentationParams["inputVolume"] = inputPerDVolume_reg_wm.GetID()
-            # statisticalPerDSegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
-            statisticalPerDSegmentationParams["mapType"] = "PerpendicularDiffusivity"
-            statisticalPerDSegmentationParams["mapResolution"] = templateDTIResolution
-            statisticalPerDSegmentationParams["statMethod"] = "T-Score"
-            statisticalPerDSegmentationParams["tThreshold"] = 5.0
-            statisticalPerDSegmentationParams["outputLabelVolume"] = outputPerDLesionLabelNode.GetID()
+            if inputPerDVolume != None:
+                #
+                # Perform the statistical segmentation - Perpendicular Diffusivity map
+                #
+                outputPerDLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
+                slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
+                statisticalPerDSegmentationParams = {}
+                statisticalPerDSegmentationParams["inputVolume"] = inputPerDVolume_reg.GetID()
+                # statisticalPerDSegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
+                statisticalPerDSegmentationParams["mapType"] = "PerpendicularDiffusivity"
+                statisticalPerDSegmentationParams["mapResolution"] = templateDTIResolution
+                statisticalPerDSegmentationParams["statMethod"] = "T-Score"
+                statisticalPerDSegmentationParams["tThreshold"] = 5.0
+                statisticalPerDSegmentationParams["outputLabelVolume"] = outputPerDLesionLabelNode.GetID()
 
-            # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalPerDSegmentationParams, wait_for_completion=True)
+                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalPerDSegmentationParams, wait_for_completion=True)
 
-            #
-            # Perform the statistical segmentation - VR map
-            #
-            outputVRLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
-            statisticalVRSegmentationParams = {}
-            statisticalVRSegmentationParams["inputVolume"] = inputVRVolume_reg_wm.GetID()
-            # statisticalVRSegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
-            statisticalVRSegmentationParams["mapType"] = "VolumeRatio"
-            statisticalVRSegmentationParams["mapResolution"] = templateDTIResolution
-            statisticalVRSegmentationParams["statMethod"] = "T-Score"
-            statisticalVRSegmentationParams["tThreshold"] = 5.0
-            statisticalVRSegmentationParams["outputLabelVolume"] = outputVRLesionLabelNode.GetID()
+            if inputVRVolume != None:
+                #
+                # Perform the statistical segmentation - VR map
+                #
+                outputVRLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
+                slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
+                statisticalVRSegmentationParams = {}
+                statisticalVRSegmentationParams["inputVolume"] = inputVRVolume_reg.GetID()
+                # statisticalVRSegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
+                statisticalVRSegmentationParams["mapType"] = "VolumeRatio"
+                statisticalVRSegmentationParams["mapResolution"] = templateDTIResolution
+                statisticalVRSegmentationParams["statMethod"] = "T-Score"
+                statisticalVRSegmentationParams["tThreshold"] = 5.0
+                statisticalVRSegmentationParams["outputLabelVolume"] = outputVRLesionLabelNode.GetID()
 
-            # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalVRSegmentationParams, wait_for_completion=True)
+                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalVRSegmentationParams, wait_for_completion=True)
 
+            # slicer.util.showStatusMessage("Step 6: Grouping lesion masks...")
             #Grouping all the lesion masks by the lesion propagation in each DTI map
             # finalLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
             # slicer.mrmlScene.AddNode(finalLesionLabelNode)
@@ -845,33 +821,148 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                     finalLesioLabelParameters["outputVolume"]= outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"]=0
 
-                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
                 if inputRAVolume != None:
                     finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["inputVolume2"] = outputRALesionLabelNode.GetID()
                     finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"] = 0
 
-                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
                 if inputPerDVolume != None:
                     finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["inputVolume2"] = outputPerDLesionLabelNode.GetID()
                     finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"] = 0
 
-                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
                 if inputVRVolume != None:
                     finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["inputVolume2"] = outputVRLesionLabelNode.GetID()
                     finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"] = 0
 
-                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+
+        elif segmentationApproach == 'Bayesian':
+            slicer.util.showStatusMessage("Step 5: Performing Bayesian segmentation on all data...")
+
+        elif segmentationApproach == 'SpatialClustering':
+            slicer.util.showStatusMessage("Step 5: Performing Spatial Clustering segmentation on all data...")
 
 
 
-        # elif statisticalAnalysis == 'Bayesian':
-        # slicer.util.showStatusMessage("Step 4: Performing LSDP segmentation on all data...")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            #################################################################################################################
+            #                               Remove the gray matter from the input normalized data                           #
+            #################################################################################################################
+            # #
+            # # Prepare the white matter mask from MNI152-T1
+            # #
+            # slicer.util.showStatusMessage("Step 4/5: Masking white matter in the input volumes ")
+            #
+            #
+            #
+            # #
+            # # FA White Matter
+            # #
+            # inputFAVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
+            # slicer.mrmlScene.AddNode(inputFAVolume_reg_wm)
+            # applyFAMaskParams = {}
+            # applyFAMaskParams["InputVolume"] = inputFAVolume_reg.GetID()
+            # applyFAMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
+            # applyFAMaskParams["Label"] = 3
+            # applyFAMaskParams["OutputVolume"] = inputFAVolume_reg_wm.GetID()
+            #
+            # # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyFAMaskParams, wait_for_completion=True)
+            #
+            #
+            # if inputMDVolume != None:
+            #     slicer.util.showStatusMessage("Step 4/5: Masking Mean Diffusivity white matter volume...")
+            #     #
+            #     # MD White Matter
+            #     #
+            #     inputMDVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
+            #     slicer.mrmlScene.AddNode(inputMDVolume_reg_wm)
+            #     applyMDMaskParams = {}
+            #     # applyMDMaskParams["InputVolume"] = inputMDNode_reg.GetID()
+            #     applyMDMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
+            #     applyMDMaskParams["Label"] = 3
+            #     applyMDMaskParams["OutputVolume"] = inputMDVolume_reg_wm.GetID()
+            #
+            #     # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyMDMaskParams, wait_for_completion=True)
+            #
+            # if inputRAVolume != None:
+            #     slicer.util.showStatusMessage("Step 4/5: Masking Relative Anisotropy white matter volume...")
+            #     #
+            #     # RA White Matter
+            #     #
+            #     inputRAVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
+            #     slicer.mrmlScene.AddNode(inputRAVolume_reg_wm)
+            #     applyRAMaskParams = {}
+            #     applyRAMaskParams["InputVolume"] = inputRAVolume_reg.GetID()
+            #     applyRAMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
+            #     applyRAMaskParams["Label"] = 3
+            #     applyRAMaskParams["OutputVolume"] = inputRAVolume_reg_wm.GetID()
+            #
+            #     # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyRAMaskParams, wait_for_completion=True)
+            #
+            # if inputPerDVolume != None:
+            #     slicer.util.showStatusMessage("Step 4/5: Masking Perpendicular Diffusivity white matter volume...")
+            #     #
+            #     # Perpendicular Diffusivity White Matter
+            #     #
+            #     inputPerDVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
+            #     slicer.mrmlScene.AddNode(inputPerDVolume_reg_wm)
+            #     applyPerDMaskParams = {}
+            #     applyPerDMaskParams["InputVolume"] = inputPerDVolume_reg.GetID()
+            #     applyPerDMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
+            #     applyPerDMaskParams["Label"] = 3
+            #     applyPerDMaskParams["OutputVolume"] = inputPerDVolume_reg_wm.GetID()
+            #
+            #     # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyPerDMaskParams, wait_for_completion=True)
+            #
+            # if inputVRVolume != None:
+            #     slicer.util.showStatusMessage("Step 4/5: Masking Volume Ratio white matter volume...")
+            #     #
+            #     # Parallel Diffusivity White Matter
+            #     #
+            #     inputVRVolume_reg_wm = slicer.vtkMRMLScalarVolumeNode()
+            #     slicer.mrmlScene.AddNode(inputVRVolume_reg_wm)
+            #     applyVRMaskParams = {}
+            #     applyVRMaskParams["InputVolume"] = inputVRVolume_reg.GetID()
+            #     applyVRMaskParams["MaskVolume"] = slicer.util.getNode(T1TemplateMask)
+            #     applyVRMaskParams["Label"] = 3
+            #     applyVRMaskParams["OutputVolume"] = inputVRVolume_reg_wm.GetID()
+            #
+            #     # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyVRMaskParams, wait_for_completion=True)
+
+
+
+
+
+
+
+
+
+
         # #
         # # Perform the statistical segmentation - FA map
         # #
@@ -894,7 +985,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         #
 
 
-        slicer.util.showStatusMessage("Processing completed!")
+        slicer.util.showStatusMessage("DTILesionTrack - Processing completed!")
 
         return True
 

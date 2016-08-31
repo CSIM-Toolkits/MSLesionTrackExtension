@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Segmentation.MS Lesion Track</category>
+  <title>Clustering Scalar Diffusion Segmentation</title>
+  <description><![CDATA[This CLI module aims to segment the DTI lesion based on a series of cluster paradigm.]]></description>
+  <version>0.0.1</version>
+  <documentation-url>https://www.slicer.org/slicerWiki/index.php/Documentation/Nightly/Modules/ClusteringScalarDiffusionSegmentation</documentation-url>
+  <license>Slicer</license>
+  <contributor>Antonio Carlos da S. Senra Filho (University of Sao Paulo), Luiz Otavio Murta Junior (University of Sao Paulo)</contributor>
+  <acknowledgements>This work was partially funded by CNPq grant 201871/2015-7/SWE and CAPES</acknowledgements>
+  <parameters>
+    <label>Input/Output</label>
+    <description><![CDATA[Input/output parameters]]></description>
+    <image>
+      <name>inputVolume</name>
+      <label>Input Volume</label>
+      <channel>input</channel>
+      <index>1</index>
+      <description><![CDATA[Input volume]]></description>
+    </image>
+    <image type="label">
+      <name>outputVolume</name>
+      <label>Output Volume</label>
+      <channel>output</channel>
+      <index>2</index>
+      <description><![CDATA[Output Volume]]></description>
+    </image>
+    <string-enumeration>
+      <name>clusterMethod</name>
+	<longflag>--cluster</longflag>
+	<description><![CDATA[Choose the clustering method.]]></description>
+	<label>Clustering Method</label>
+	<default>KMeans</default>
+	<element>KMeans</element>
+	<element>FuzzyCMeans</element>
+        <element>KernelFuzzyCMeans</element>
+    </string-enumeration>
+    <string-enumeration>
+      <name>mapType</name>
+	<longflag>--diffMap</longflag>
+	<description><![CDATA[Choose the diffusion map inserted in the input image field.]]></description>
+	<label>Diffusion Map Type</label>
+	<default>FractionalAnisotropy</default>
+	<element>FractionalAnisotropy</element>
+	<element>MeanDiffusivity</element>
+	<element>RelativeAnisotropy</element>
+	<element>PerpendicularDiffusivity</element>
+	<element>VolumeRatio</element>
+    </string-enumeration>
+    <string-enumeration>
+      <name>mapResolution</name>
+	<longflag>--diffMapRes</longflag>
+	<description><![CDATA[Choose the diffusion map resolution.]]></description>
+	<label>Diffusion Map Resolution</label>
+	<default>2mm</default>
+	<element>2mm</element>
+	<element>1mm</element>
+    </string-enumeration>
+    <integer>
+	   <name>numClass</name>
+	   <longflag>--nClass</longflag>
+	   <label>Number of classes</label>
+	   <description><![CDATA[Set the number of tissues classes desired to segment in the input image.]]></description>
+	   <default>3</default>
+	   <constraints>
+	   <minimum>1</minimum>
+	   <maximum>10</maximum>
+	   <step>1</step>
+	   </constraints>
+	</integer> 
+  </parameters>
+<parameters advanced="true">
+  <label>K-means Parameters</label>
+    <description><![CDATA[K-Means clustering parameters]]></description>
+    <double-vector>
+ 	      <name>initMeans</name>
+ 	      <longflag>--initMeans</longflag>
+ 	      <description><![CDATA[A first approximation for the mean value for each tissue class.]]></description>
+ 	      <label>Tissues Mean Value Guess</label>
+ 	      <default>0.0,0.1,0.4</default>
+ 	    </double-vector>
+  </parameters>
+ <parameters advanced="true">
+  <label>Fuzzy C-Means Parameters</label>
+    <description><![CDATA[Fuzzy C-Means clustering parameters]]></description>
+    <double-vector>
+ 	      <name>meanGuess</name>
+ 	      <longflag>--means</longflag>
+ 	      <description><![CDATA[A first approximation for the mean value for each tissue class.]]></description>
+ 	      <label>Tissues Mean Value Guess</label>
+ 	      <default>0.1,0.4</default>
+ 	    </double-vector>
+  </parameters>
+<parameters>
+<label>Image Preprocessing Parameters</label>
+    <description><![CDATA[Image pre-processing  parameters]]></description>
+        <float>
+	   <name>alpha</name>
+	   <longflag>--alpha</longflag>
+	   <label>Alpha</label>
+	   <description><![CDATA[Set the alpha paramters for the Sigmoid function lesion enhancement step.]]></description>
+	   <default>0.05</default>
+	   <constraints>
+	   <minimum>-1</minimum>
+	   <maximum>1</maximum>
+	   <step>0.01</step>
+	   </constraints>
+	</float> 
+        <float>
+	   <name>beta</name>
+	   <longflag>--beta</longflag>
+	   <label>Beta</label>
+	   <description><![CDATA[Set the beta paramters for the Sigmoid function lesion enhancement step.]]></description>
+	   <default>0.35</default>
+	   <constraints>
+	   <minimum>0</minimum>
+	   <maximum>1</maximum>
+	   <step>0.01</step>
+	   </constraints>
+	</float> 
+</parameters>
+</executable>
