@@ -12,6 +12,7 @@
 #include "itkImageRegionIterator.h"
 #include "itkThresholdImageFilter.h"
 #include "itkComposeImageFilter.h"
+#include "itkStatisticsImageFilter.h"
 
 //Segmentation Methods
 #include "itkBayesianClassifierImageFilter.h"
@@ -51,35 +52,17 @@ int DoIt( int argc, char * argv[], T )
     reader->SetFileName( inputVolume.c_str() );
     reader->Update();
 
-//TODO Study the use of Gaussian Mxiture Model to estimate the mean values in the image
+    typedef itk::StatisticsImageFilter<InputImageType> StatisticType;
+    typename StatisticType::Pointer stat = StatisticType::New();
+    stat->SetInput(reader->GetOutput());
+    stat->Update();
     double meanValues[numClass];
-//    = meanGuess;
-    if (guessMeans) {
-        // Estimating the initial mean values
-        typedef itk::ScalarImageKmeansImageFilter< InputImageType > KMeansFilterType;
-        KMeansFilterType::Pointer kmeansFilter = KMeansFilterType::New();
-        kmeansFilter->SetInput( reader->GetOutput() );
-        const unsigned int numberOfInitialClasses = numClass;
 
-        for( unsigned k=0; k < numberOfInitialClasses; k++ )
-        {
-            kmeansFilter->AddClassWithInitialMean(meanGuess[k]);
-        }
-
-        kmeansFilter->Update();
-
-        KMeansFilterType::ParametersType estimatedMeans = kmeansFilter->GetFinalMeans();
-        const unsigned int numberOfClasses = estimatedMeans.Size();
-        for ( unsigned int i = 0; i < numberOfClasses; ++i )
-        {
-            meanValues[i] = estimatedMeans[i];
-            std::cout<<"Estimated mean["<<i<<"] = "<<meanValues[i]<<std::endl;
-        }
-    }else{
+    double guessByContrast = (stat->GetMaximum() - stat->GetMinimum())/numClass;
         for (int n = 0; n < numClass; ++n) {
-            meanValues[n]=meanGuess[n];
+            meanValues[n]=guessByContrast*(n+1);
         }
-    }
+
 
     //            Apply segmentation procedure
     if (segMethod == "KMeans") {
@@ -201,7 +184,7 @@ int DoIt( int argc, char * argv[], T )
             writer->Update();
             return EXIT_SUCCESS;
         }
-    }else if (segMethod == "MRF") {
+    }else if (segMethod == "EM-MRF") {
         //Markov Random Field Segmentation Method
         typedef itk::FixedArray<InputPixelType,1>  ArrayPixelType;
         typedef itk::Image< ArrayPixelType, Dimension > ArrayImageType;
