@@ -55,7 +55,7 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-PerpDiffmean-131-2mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-VRmean-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-VRmean-131-2mm.nii.gz
-StatisticalBrainSegmentation-Templates\\USP-ICBM-FAstd-131-1mm.nii.gz
+	    StatisticalBrainSegmentation-Templates\\USP-ICBM-FAstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-FAstd-131-2mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MDstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MDstd-131-2mm.nii.gz
@@ -66,18 +66,8 @@ StatisticalBrainSegmentation-Templates\\USP-ICBM-FAstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-2mm.nii.gz
 
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-FA-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-MD-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-RA-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-Tr-1mm.nii.gz
-#                        StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-PerD-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-ParD-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-FA-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-MD-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-RA-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-Tr-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-PerD-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-ParD-2mm.nii.gz
+	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-1mm.nii.gz
+	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-2mm.nii.gz
             )
     endif (WIN32)
     if (UNIX)
@@ -104,7 +94,7 @@ StatisticalBrainSegmentation-Templates\\USP-ICBM-FAstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-PerpDiffmean-131-2mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-VRmean-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-VRmean-131-2mm.nii.gz
-StatisticalBrainSegmentation-Templates/USP-ICBM-FAstd-131-1mm.nii.gz
+	    StatisticalBrainSegmentation-Templates/USP-ICBM-FAstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-FAstd-131-2mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-MDstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-MDstd-131-2mm.nii.gz
@@ -115,18 +105,8 @@ StatisticalBrainSegmentation-Templates/USP-ICBM-FAstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-2mm.nii.gz
 
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-FA-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-MD-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-RA-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-Tr-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-PerD-1mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-ParD-1mm.nii.gz
-            #           StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-FA-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-MD-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-RA-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-Tr-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-PerD-2mm.nii.gz
-            #            StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-ParD-2mm.nii.gz
+            StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-1mm.nii.gz
+	    StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-2mm.nii.gz
             )
     endif (UNIX)
 
@@ -187,18 +167,8 @@ if (WIN32)
 	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-2mm.nii.gz"
 
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-FA-1mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-MD-1mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-Tr-1mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-RA-1mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-PerD-1mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-ParD-1mm.nii.gz"
-        #   "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-FA-2mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-MD-2mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-Tr-2mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-RA-2mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-PerD-2mm.nii.gz"
-        #    "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MS-BayesPriors-ParD-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-2mm.nii.gz"
         )
 endif (WIN32)
 if (UNIX)
@@ -237,18 +207,8 @@ if (UNIX)
 	"~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-1mm.nii.gz"
         "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-2mm.nii.gz"
 
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-FA-1mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-MD-1mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-RA-1mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-Tr-1mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-PerD-1mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-ParD-1mm.nii.gz"
-#        #   "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-FA-2mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-MD-2mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-RA-2mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-Tr-2mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-PerD-2mm.nii.gz"
-#        #    "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MS-BayesPriors-ParD-2mm.nii.gz"
+	"~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-1mm.nii.gz"
+        "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-2mm.nii.gz"
         )
 endif (UNIX)
 

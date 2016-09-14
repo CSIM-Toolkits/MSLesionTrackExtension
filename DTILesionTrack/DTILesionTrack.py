@@ -2,6 +2,7 @@ import os
 import sys
 import platform
 import unittest
+
 from os.path import expanduser
 
 import vtk, qt, ctk, slicer
@@ -83,7 +84,7 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         self.inputT1Selector.selectNodeUponCreation = True
         self.inputT1Selector.addEnabled = False
         self.inputT1Selector.removeEnabled = False
-        self.inputT1Selector.noneEnabled = True
+        self.inputT1Selector.noneEnabled = False
         self.inputT1Selector.showHidden = False
         self.inputT1Selector.showChildNodeTypes = False
         self.inputT1Selector.setMRMLScene(slicer.mrmlScene)
@@ -205,7 +206,7 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         # Brain extraction on T1 and FLAIR
         #
         self.setApplyBrainExtractedBooleanWidget = ctk.ctkCheckBox()
-        self.setApplyBrainExtractedBooleanWidget.setChecked(True)
+        self.setApplyBrainExtractedBooleanWidget.setChecked(False)
         self.setApplyBrainExtractedBooleanWidget.setToolTip(
             "Apply previous brain extraction step before move on the registration process. If the input T1 and FLAIR images are already brain extracted, you can leave this step blank.")
         parametersOutputFormLayout.addRow("Apply brain extraction on T1 and FLAIR", self.setApplyBrainExtractedBooleanWidget)
@@ -245,8 +246,8 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         # Template Resolution Area
         #
         self.setTemplateResolutionBooleanWidget = ctk.ctkComboBox()
-        self.setTemplateResolutionBooleanWidget.addItem("2mm")
         self.setTemplateResolutionBooleanWidget.addItem("1mm")
+        self.setTemplateResolutionBooleanWidget.addItem("2mm")
         self.setTemplateResolutionBooleanWidget.setToolTip(
             "Choose the spatial resolution which will be used to whole DTI segmentation pipeline. Options: 1mm or 2mm")
         parametersAdvancedFormLayout.addRow("Template Spatial Resolution ", self.setTemplateResolutionBooleanWidget)
@@ -255,8 +256,8 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         # Interpolation Method Area
         #
         self.setInterpolationMethodBooleanWidget = ctk.ctkComboBox()
-        self.setInterpolationMethodBooleanWidget.addItem("BSpline")
         self.setInterpolationMethodBooleanWidget.addItem("Linear")
+        self.setInterpolationMethodBooleanWidget.addItem("BSpline")
         self.setInterpolationMethodBooleanWidget.addItem("NearestNeighbor")
         self.setInterpolationMethodBooleanWidget.setToolTip(
             "Choose the interpolation method used to register the input images into the standard space. Options: Linear, Tri-linear and Spline")
@@ -421,9 +422,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
 
         # Perform fast registration strategy? (Do always the registration over 2mm and interpolate to 1mm after warped)
         # TODO PRECISA TERMINAR ESTA IDEIA!!!!!!
-        if useFastRegistration.isChecked():
+        # if useFastRegistration.isChecked():
             # DO ALL THE REGISTRATION IN 2MM
-        else
+        # else
         #     DO NORMALLY
 
         slicer.util.showStatusMessage("Step 1/5: Reading DTI Template...")
@@ -569,7 +570,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         regParams["outputVolume"] = inputT1Volume_reg.GetID()
         regParams["linearTransform"] = registrationT12FLAIRTransform.GetID()
         regParams["initializeTransformMode"] = "useMomentsAlign"
-        regParams["useAffine"] = True
+        regParams["useRigid"] = True
         regParams["interpolationMode"] = interpolationMethod.currentText
         regParams["numberOfSamples"] = 200000
 
@@ -599,7 +600,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
 
         #
-        # Registering the MNI-DTI template to FA native space.
+        # Registering the MNI-DTI template to FA native space. (Uses only to obtain the registration transformation)
         #
 
         # Demon Diffeomorphic Registration
@@ -611,13 +612,17 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         regParams = {}
         regParams["fixedVolume"] = inputFAVolume_reg.GetID()
         regParams["movingVolume"] = slicer.util.getNode(DTITemplateNodeName)
-        regParams["samplingPercentage"] = 0.02
+        regParams["samplingPercentage"] = 0.002
         regParams["outputVolume"] = inputTemplateVolume_reg.GetID()
         regParams["outputDisplacementFieldVolume"] = registrationTemplateTransform.GetID()
         regParams["interpolationMode"] = interpolationMethod.currentText
 
         slicer.cli.run(slicer.modules.brainsdemonwarp, None, regParams, wait_for_completion=True)
 
+
+        #
+        # Applying transformation to DTI template image that will actually be used on the lesion segmentation part
+        #TODO FAZER ESTA PARTE PARA USAR OUTRO TEMPLATE DTI NA SEGMENTACAO ... USAR PARA COREGISTRO UM DTI TEMPLATE DIFERENTE
 
         #
         # Applying registration transform - MD Volume
@@ -717,11 +722,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         #################################################################################################################
         #                                    Apply the chosen segmentation approach                                     #
         #################################################################################################################
-
-        # Perform the statistical segmentation based on all the input data
-        #
         if (segmentationApproach == 'LSDP'):
-
             slicer.util.showStatusMessage("Step 5/5: Performing LSDP segmentation on all data...")
             #
             # Perform the statistical segmentation - FA map
@@ -754,7 +755,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 statisticalMDSegmentationParams["tThreshold"] = 5.0
                 statisticalMDSegmentationParams["outputLabelVolume"] = outputMDLesionLabelNode.GetID()
 
-                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalMDSegmentationParams, wait_for_completion=True)
+                # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalMDSegmentationParams, wait_for_completion=True)
 
             if inputRAVolume != None:
                 #
@@ -771,7 +772,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 statisticalRASegmentationParams["tThreshold"] = 5.0
                 statisticalRASegmentationParams["outputLabelVolume"] = outputRALesionLabelNode.GetID()
 
-                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalRASegmentationParams, wait_for_completion=True)
+                # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalRASegmentationParams, wait_for_completion=True)
 
             if inputPerDVolume != None:
                 #
@@ -788,7 +789,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 statisticalPerDSegmentationParams["tThreshold"] = 5.0
                 statisticalPerDSegmentationParams["outputLabelVolume"] = outputPerDLesionLabelNode.GetID()
 
-                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalPerDSegmentationParams, wait_for_completion=True)
+                # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalPerDSegmentationParams, wait_for_completion=True)
 
             if inputVRVolume != None:
                 #
@@ -805,7 +806,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 statisticalVRSegmentationParams["tThreshold"] = 5.0
                 statisticalVRSegmentationParams["outputLabelVolume"] = outputVRLesionLabelNode.GetID()
 
-                slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalVRSegmentationParams, wait_for_completion=True)
+                # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalVRSegmentationParams, wait_for_completion=True)
 
             # slicer.util.showStatusMessage("Step 6: Grouping lesion masks...")
             #Grouping all the lesion masks by the lesion propagation in each DTI map
@@ -821,34 +822,47 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                     finalLesioLabelParameters["outputVolume"]= outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"]=0
 
-                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
                 if inputRAVolume != None:
                     finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["inputVolume2"] = outputRALesionLabelNode.GetID()
                     finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"] = 0
 
-                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
                 if inputPerDVolume != None:
                     finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["inputVolume2"] = outputPerDLesionLabelNode.GetID()
                     finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"] = 0
 
-                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
                 if inputVRVolume != None:
                     finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["inputVolume2"] = outputVRLesionLabelNode.GetID()
                     finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
                     finalLesioLabelParameters["order"] = 0
 
-                    slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+                    # slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
+
+        elif segmentationApproach == 'SpatialClustering':
+            slicer.util.showStatusMessage("Step 5: Performing Spatial Clustering segmentation on all data...")
+            outputFALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
+            slicer.mrmlScene.AddNode(outputFALesionLabelNode)
+            statisticalFASegmentationParams = {}
+            statisticalFASegmentationParams["inputVolume"] = inputFAVolume_reg.GetID()
+            # statisticalFASegmentationParams["inputLabel"] = INPUT LABEL FROM LST!!!!
+            statisticalFASegmentationParams["mapType"] = "FracionalAnisotropy"
+            statisticalFASegmentationParams["mapResolution"] = templateDTIResolution
+            statisticalFASegmentationParams["statMethod"] = "T-Score"
+            statisticalFASegmentationParams["tThreshold"] = 5.0
+            statisticalFASegmentationParams["outputLabelVolume"] = outputFALesionLabelNode.GetID()
+
+            # slicer.cli.run(slicer.modules.lspdbrainsegmentation, None, statisticalFASegmentationParams, wait_for_completion=True)
 
         elif segmentationApproach == 'Bayesian':
             slicer.util.showStatusMessage("Step 5: Performing Bayesian segmentation on all data...")
 
-        elif segmentationApproach == 'SpatialClustering':
-            slicer.util.showStatusMessage("Step 5: Performing Spatial Clustering segmentation on all data...")
 
 
 
@@ -953,6 +967,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             #     applyVRMaskParams["OutputVolume"] = inputVRVolume_reg_wm.GetID()
             #
             #     # slicer.cli.run(slicer.modules.maskscalarvolume, None, applyVRMaskParams, wait_for_completion=True)
+
+        # Perform the statistical segmentation based on all the input data
+        #
 
 
 
