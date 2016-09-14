@@ -1,4 +1,5 @@
 #include "itkImageFileWriter.h"
+#include "itkStatisticsImageFilter.hxx"
 
 //Histogram Matching
 #include "itkHistogramMatchingImageFilter.h"
@@ -6,29 +7,39 @@
 //Substract Image Filter
 #include "itkSubtractImageFilter.h"
 
+//Threshold Image Filter
+#include "itkThresholdImageFilter.h"
+
 //Sigmoid Image Enhancement
+#include "itkSigmoidParametersOptimizationImageCalculator.h"
 #include "itkSigmoidImageFilter.h"
 
 //Clustering Methods
 #include "itkScalarImageKmeansImageFilter.h"
 
+//MRF Refinement
+#include "itkMRFImageFilter.h"
+#include "itkDistanceToCentroidMembershipFunction.h"
+#include "itkMinimumDecisionRule.h"
+#include "itkComposeImageFilter.h"
+
 #include "itkPluginUtilities.h"
 
 #include "ClusteringScalarDiffusionSegmentationCLP.h"
 
-#ifdef _WIN32
-#define STATISTICALTEMPLATESFOLDER "\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates"
-#define PATH_SEPARATOR "\\"
-#define PATH_SEPARATOR_CHAR '\\'
-#define DEL_CMD "del /Q "
-#define MOVE_CMD "move "
-#else
-#define STATISTICALTEMPLATESFOLDER "/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates"
-#define PATH_SEPARATOR "/"
-#define PATH_SEPARATOR_CHAR '/'
-#define DEL_CMD "rm -f "
-#define MOVE_CMD "mv "
-#endif
+//#ifdef _WIN32
+//#define STATISTICALTEMPLATESFOLDER "\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates"
+//#define PATH_SEPARATOR "\\"
+//#define PATH_SEPARATOR_CHAR '\\'
+//#define DEL_CMD "del /Q "
+//#define MOVE_CMD "move "
+//#else
+//#define STATISTICALTEMPLATESFOLDER "/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates"
+//#define PATH_SEPARATOR "/"
+//#define PATH_SEPARATOR_CHAR '/'
+//#define DEL_CMD "rm -f "
+//#define MOVE_CMD "mv "
+//#endif
 
 using namespace std;
 
@@ -44,11 +55,11 @@ template <class T>
 int DoIt( int argc, char * argv[], T )
 {
 
-#ifdef _WIN32
-    char* HOME_DIR=getenv("HOMEPATH");
-#else
-    char* HOME_DIR=getenv("HOME");
-#endif
+//#ifdef _WIN32
+//    char* HOME_DIR=getenv("HOMEPATH");
+//#else
+//    char* HOME_DIR=getenv("HOME");
+//#endif
 
   PARSE_ARGS;
 
@@ -62,62 +73,73 @@ int DoIt( int argc, char * argv[], T )
   typedef itk::ImageFileWriter<OutputImageType> WriterType;
 
 
-  typename ReaderType::Pointer reader = ReaderType::New();
-  reader->SetFileName( inputVolume.c_str() );
+  typename ReaderType::Pointer inputReader = ReaderType::New();
+  inputReader->SetFileName( inputVolume.c_str() );
 
-  string meanStatTemplate = "";
-  if ((mapType == "FractionalAnisotropy") & (mapResolution == "1mm")) {
-      meanStatTemplate="USP-ICBM-FAmean-131-1mm.nii.gz";
-  }else if ((mapType == "MeanDiffusivity") & (mapResolution == "1mm")) {
-      meanStatTemplate="USP-ICBM-MDmean-131-1mm.nii.gz";
-  }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "1mm")) {
-      meanStatTemplate="USP-ICBM-RAmean-131-1mm.nii.gz";
-  }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "1mm")) {
-      meanStatTemplate="USP-ICBM-PerpDiffmean-131-1mm.nii.gz";
-  }else if ((mapType == "VolumeRatio") & (mapResolution == "1mm")) {
-      meanStatTemplate="USP-ICBM-VRmean-131-1mm.nii.gz";
-  }else if ((mapType == "FractionalAnisotropy") & (mapResolution == "2mm")) {
-      meanStatTemplate="USP-ICBM-FAmean-131-2mm.nii.gz";
-  }else if ((mapType == "MeanDiffusivity") & (mapResolution == "2mm")) {
-      meanStatTemplate="USP-ICBM-MDmean-131-2mm.nii.gz";
-  }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "2mm")) {
-      meanStatTemplate="USP-ICBM-RAmean-131-2mm.nii.gz";
-  }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "2mm")) {
-      meanStatTemplate="USP-ICBM-PerpDiffmean-131-2mm.nii.gz";
-  }else if ((mapType == "VolumeRatio") & (mapResolution == "2mm")) {
-      meanStatTemplate="USP-ICBM-VRmean-131-2mm.nii.gz";
-  }
-
-  //    Read the DTI Template
-  typename ReaderType::Pointer templateReader = ReaderType::New();
-  stringstream meanTEMPLATE_path;
-  meanTEMPLATE_path<<HOME_DIR<<STATISTICALTEMPLATESFOLDER<<PATH_SEPARATOR<<meanStatTemplate;
-  templateReader->SetFileName(meanTEMPLATE_path.str().c_str());
-//  templateReader->Update();
+  typename ReaderType::Pointer referenceReader = ReaderType::New();
+  referenceReader->SetFileName( referenceVolume.c_str() );
 
   //Histogram matching step
     typedef itk::HistogramMatchingImageFilter<InputImageType, InputImageType> HistogramMatchType;
   typename HistogramMatchType::Pointer histogramMatch = HistogramMatchType::New();
-  histogramMatch->SetSourceImage(reader->GetOutput());
-  histogramMatch->SetReferenceImage(templateReader->GetOutput());
+  histogramMatch->SetSourceImage(inputReader->GetOutput());
+  histogramMatch->SetReferenceImage(referenceReader->GetOutput());
   histogramMatch->SetNumberOfHistogramLevels(128);
   histogramMatch->SetNumberOfMatchPoints(10000);
 
   //Image subtraction with the DTI atlas
     typedef itk::SubtractImageFilter<InputImageType,InputImageType, InputImageType> SubtractType;
   typename SubtractType::Pointer subtract = SubtractType::New();
-  subtract->SetInput1(templateReader->GetOutput());
+  subtract->SetInput1(referenceReader->GetOutput());
   subtract->SetInput2(histogramMatch->GetOutput());
+
+  //Cleaning unrelated differences from the difference image
+  typedef itk::ThresholdImageFilter<InputImageType>         ThresholderType;
+  typename ThresholderType::Pointer cleanVoxels = ThresholderType::New();
+  cleanVoxels->SetInput(subtract->GetOutput());
+  if (dtiMap=="FractionalAnisotropy") {
+    cleanVoxels->SetLower(static_cast<InputPixelType>(0.0));
+    cleanVoxels->SetUpper(static_cast<InputPixelType>(1.0));
+    cleanVoxels->SetOutsideValue(static_cast<InputPixelType>(0.0));
+  }else if (dtiMap=="MeanDiffusivity") {
+//      cleanVoxels->SetLower(static_cast<InputImageType::PixelType>(0.0));
+//      cleanVoxels->SetUpper(static_cast<InputImageType::PixelType>(1.0));
+//      cleanVoxels->SetOutsideValue(static_cast<InputImageType::PixelType>(0.0));
+  }else if (dtiMap=="RelativeAnisotropy") {
+//      cleanVoxels->SetLower(static_cast<InputImageType::PixelType>(0.0));
+//      cleanVoxels->SetUpper(static_cast<InputImageType::PixelType>(1.0));
+//      cleanVoxels->SetOutsideValue(static_cast<InputImageType::PixelType>(0.0));
+  }else if (dtiMap=="ParallelDiffusivity") {
+//      cleanVoxels->SetLower(static_cast<InputImageType::PixelType>(0.0));
+//      cleanVoxels->SetUpper(static_cast<InputImageType::PixelType>(1.0));
+//      cleanVoxels->SetOutsideValue(static_cast<InputImageType::PixelType>(0.0));
+  }else if (dtiMap=="VolumeRatio") {
+//      cleanVoxels->SetLower(static_cast<InputImageType::PixelType>(0.0));
+//      cleanVoxels->SetUpper(static_cast<InputImageType::PixelType>(1.0));
+//      cleanVoxels->SetOutsideValue(static_cast<InputImageType::PixelType>(0.0));
+  }
+  cleanVoxels->Update();
+
+  //Find Sigmoid optimum parameters
+  typedef itk::SigmoidParametersOptimizationImageCalculator<InputImageType> OptimumSigmoidParametersType;
+  typename OptimumSigmoidParametersType::Pointer optSigmoid = OptimumSigmoidParametersType::New();
+  optSigmoid->SetInput(cleanVoxels->GetOutput());
+  //TODO VER SE TODOS OS MAPAS PODEM SER APLICADOS OS MESMO PARAMETROS PARA SIGMOID
+  optSigmoid->SetMaximumAlpha(1.0);
+  optSigmoid->SetMinimumAlpha(0.0);
+//  optSigmoid->SetMaximumBeta();
+//  optSigmoid->SetMinimumBeta();
+  optSigmoid->Update();
+  std::cout<<"Optimum [Alpha,Beta] = [ "<<optSigmoid->GetOptimumAlpha()<<" , "<<optSigmoid->GetOptimumBeta()<<" ]"<<std::endl;
 
   //Sigmoid lesion enhancement step
     typedef itk::SigmoidImageFilter<InputImageType,InputImageType> SigmoidType;
   typename SigmoidType::Pointer sigmoid = SigmoidType::New();
-  sigmoid->SetInput(subtract->GetOutput());
+  sigmoid->SetInput(cleanVoxels->GetOutput());
     sigmoid->SetOutputMinimum(0);
     sigmoid->SetOutputMaximum(1);
-    //TODO Work on alpha and beta optimization!!!
-    sigmoid->SetAlpha(alpha);
-    sigmoid->SetBeta(beta);
+    sigmoid->SetAlpha(optSigmoid->GetOptimumAlpha());
+    sigmoid->SetBeta(optSigmoid->GetOptimumBeta());
 
   //Lesion segmentation by clustering approach
   if (clusterMethod == "KMeans") {
@@ -127,9 +149,15 @@ int DoIt( int argc, char * argv[], T )
       kmeansFilter->SetInput( sigmoid->GetOutput() );
       const unsigned int numberOfInitialClasses = numClass;
 
-      for( unsigned k=0; k < numberOfInitialClasses; k++ )
+      typedef itk::StatisticsImageFilter<InputImageType> StatisticsType;
+      typename StatisticsType::Pointer statImage = StatisticsType::New();
+      statImage->SetInput(sigmoid->GetOutput());
+      statImage->Update();
+      double classStep=statImage->GetSigma()/static_cast<InputPixelType>(numberOfInitialClasses);
+      for( unsigned k=1; k <= numberOfInitialClasses; k++ )
       {
-          kmeansFilter->AddClassWithInitialMean(initMeans[k]);
+          kmeansFilter->AddClassWithInitialMean(classStep*k);
+          std::cout<<"initClassGuess["<<k<<"]="<<classStep*k<<std::endl;
       }
 
       kmeansFilter->Update();
@@ -142,7 +170,127 @@ int DoIt( int argc, char * argv[], T )
           std::cout << "    estimated mean : " << estimatedMeans[i] << std::endl;
       }
 
-      typename WriterType::Pointer writer = WriterType::New();
+
+
+
+
+
+
+
+    //Markov Random Field label refinement
+      typedef itk::FixedArray<OutputPixelType,1>  ArrayPixelType;
+      typedef itk::Image< ArrayPixelType, 3 > ArrayImageType;
+      typedef itk::ComposeImageFilter<InputImageType, ArrayImageType> ScalarToArrayFilterType;
+
+      typename ScalarToArrayFilterType::Pointer scalarToArrayFilter = ScalarToArrayFilterType::New();
+      scalarToArrayFilter->SetInput( sigmoid->GetOutput() );
+
+      typedef itk::MRFImageFilter< ArrayImageType, OutputImageType > MRFFilterType;
+
+      MRFFilterType::Pointer mrfFilter = MRFFilterType::New();
+
+      mrfFilter->SetInput( scalarToArrayFilter->GetOutput() );
+      mrfFilter->SetNumberOfClasses( numberOfClasses );
+      mrfFilter->SetMaximumNumberOfIterations( numberOfIterations );
+      mrfFilter->SetErrorTolerance( 1e-7 );
+      mrfFilter->SetSmoothingFactor( smoothingFactor );
+
+      typedef itk::ImageClassifierBase<ArrayImageType,OutputImageType >   SupervisedClassifierType;
+      SupervisedClassifierType::Pointer classifier = SupervisedClassifierType::New();
+
+      typedef itk::Statistics::MinimumDecisionRule DecisionRuleType;
+      DecisionRuleType::Pointer  classifierDecisionRule = DecisionRuleType::New();
+
+      classifier->SetDecisionRule( classifierDecisionRule.GetPointer() );
+
+      typedef itk::Statistics::DistanceToCentroidMembershipFunction< ArrayPixelType > MembershipFunctionType;
+      typedef MembershipFunctionType::Pointer MembershipFunctionPointer;
+
+      double meanDistance = 0;
+      MembershipFunctionType::CentroidType centroid(1);
+      for( unsigned int i=1; i <= numberOfClasses; i++ )
+        {
+        MembershipFunctionPointer membershipFunction = MembershipFunctionType::New();
+//        centroid[0] = atof( argv[i+numberOfArgumentsBeforeMeans] );
+//        centroid[0] = initMeans[i];
+        centroid[0]=classStep*i;
+        membershipFunction->SetCentroid( centroid );
+        classifier->AddMembershipFunction( membershipFunction );
+        meanDistance += static_cast< double > (centroid[0]);
+        }
+      if (numberOfClasses > 0)
+        {
+        meanDistance /= numberOfClasses;
+        }
+      else
+        {
+        std::cerr << "ERROR: numberOfClasses is 0" << std::endl;
+        return EXIT_FAILURE;
+        }
+      mrfFilter->SetSmoothingFactor( smoothingFactor );
+      mrfFilter->SetNeighborhoodRadius( 1 );
+
+      std::vector< double > weights;
+      weights.push_back(1.0);
+      weights.push_back(1.5);
+      weights.push_back(1.0);
+      weights.push_back(1.5);
+      weights.push_back(1.0); // This is the central pixel
+      weights.push_back(1.5);
+      weights.push_back(1.0);
+      weights.push_back(1.5);
+      weights.push_back(1.0);
+
+      weights.push_back(1.5);
+      weights.push_back(2.0);
+      weights.push_back(1.5);
+      weights.push_back(2.0);
+      weights.push_back(0.0); // This is the central pixel
+      weights.push_back(2.0);
+      weights.push_back(1.5);
+      weights.push_back(2.0);
+      weights.push_back(1.5);
+
+      weights.push_back(1.0);
+      weights.push_back(1.5);
+      weights.push_back(1.0);
+      weights.push_back(1.5);
+      weights.push_back(1.0); // This is the central pixel
+      weights.push_back(1.5);
+      weights.push_back(1.0);
+      weights.push_back(1.5);
+      weights.push_back(1.0);
+
+      double totalWeight = 0;
+      for(std::vector< double >::const_iterator wcIt = weights.begin(); wcIt != weights.end(); ++wcIt )
+        {
+        totalWeight += *wcIt;
+        }
+      for(std::vector< double >::iterator wIt = weights.begin(); wIt != weights.end(); ++wIt )
+        {
+        *wIt = static_cast< double > ( (*wIt) * meanDistance / (2 * totalWeight));
+        }
+
+      mrfFilter->SetMRFNeighborhoodWeight( weights );
+        mrfFilter->SetClassifier( classifier );
+
+        std::cout << "Number of Iterations : ";
+        std::cout << mrfFilter->GetNumberOfIterations() << std::endl;
+        std::cout << "Stop condition: " << std::endl;
+        std::cout << "  (1) Maximum number of iterations " << std::endl;
+        std::cout << "  (2) Error tolerance:  "  << std::endl;
+        std::cout << mrfFilter->GetStopCondition() << std::endl;
+
+
+
+
+
+
+
+
+
+
+     typename WriterType::Pointer writer = WriterType::New();
       writer->SetFileName( outputVolume.c_str() );
       writer->SetInput( kmeansFilter->GetOutput() );
       writer->SetUseCompression(1);
@@ -150,11 +298,6 @@ int DoIt( int argc, char * argv[], T )
   }else if (clusterMethod == "FuzzyCMean") {
 
   }
-
-  //TODO Deixar esta parte final para o DTILesionTrack (Python)
-  //White matter masking to reduce false positive ratio
-
-  //Morphological closing to clean small signals
 
   return EXIT_SUCCESS;
 }

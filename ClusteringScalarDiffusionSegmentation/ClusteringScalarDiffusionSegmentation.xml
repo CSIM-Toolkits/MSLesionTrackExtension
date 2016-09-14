@@ -18,13 +18,32 @@
       <index>1</index>
       <description><![CDATA[Input volume]]></description>
     </image>
+    <image>
+      <name>referenceVolume</name>
+      <label>Reference Volume</label>
+      <channel>input</channel>
+      <index>2</index>
+      <description><![CDATA[Reference volume]]></description>
+    </image>
     <image type="label">
       <name>outputVolume</name>
       <label>Output Volume</label>
       <channel>output</channel>
-      <index>2</index>
+      <index>3</index>
       <description><![CDATA[Output Volume]]></description>
     </image>
+    <string-enumeration>
+      <name>dtiMap</name>
+	<longflag>--dtiMap</longflag>
+	<description><![CDATA[Choose the type of DTI scalar map that was added in the input and reference image volumes.]]></description>
+	<label>DTI Scalar Map</label>
+	<default>FractionalAnisotropy</default>
+	<element>FractionalAnisotropy</element>
+	<element>MeanDiffusivity</element>
+        <element>RelativeAnisotropy</element>
+	<element>ParallelDiffusivity</element>
+	<element>VolumeRatio</element>
+    </string-enumeration>
     <string-enumeration>
       <name>clusterMethod</name>
 	<longflag>--cluster</longflag>
@@ -35,39 +54,6 @@
 	<element>FuzzyCMeans</element>
         <element>KernelFuzzyCMeans</element>
     </string-enumeration>
-    <string-enumeration>
-      <name>mapType</name>
-	<longflag>--diffMap</longflag>
-	<description><![CDATA[Choose the diffusion map inserted in the input image field.]]></description>
-	<label>Diffusion Map Type</label>
-	<default>FractionalAnisotropy</default>
-	<element>FractionalAnisotropy</element>
-	<element>MeanDiffusivity</element>
-	<element>RelativeAnisotropy</element>
-	<element>PerpendicularDiffusivity</element>
-	<element>VolumeRatio</element>
-    </string-enumeration>
-    <string-enumeration>
-      <name>mapResolution</name>
-	<longflag>--diffMapRes</longflag>
-	<description><![CDATA[Choose the diffusion map resolution.]]></description>
-	<label>Diffusion Map Resolution</label>
-	<default>2mm</default>
-	<element>2mm</element>
-	<element>1mm</element>
-    </string-enumeration>
-    <integer>
-	   <name>numClass</name>
-	   <longflag>--nClass</longflag>
-	   <label>Number of classes</label>
-	   <description><![CDATA[Set the number of tissues classes desired to segment in the input image.]]></description>
-	   <default>3</default>
-	   <constraints>
-	   <minimum>1</minimum>
-	   <maximum>10</maximum>
-	   <step>1</step>
-	   </constraints>
-	</integer> 
   </parameters>
 <parameters advanced="true">
   <label>K-means Parameters</label>
@@ -118,5 +104,41 @@
 	   <step>0.01</step>
 	   </constraints>
 	</float> 
+        <integer>
+	   <name>numClass</name>
+	   <longflag>--nClass</longflag>
+	   <label>Number of Classes</label>
+	   <description><![CDATA[Set the number of tissues classes desired to segment in the input image.]]></description>
+	   <default>3</default>
+	   <constraints>
+	   <minimum>1</minimum>
+	   <maximum>10</maximum>
+	   <step>1</step>
+	   </constraints>
+	</integer> 
+	<integer>
+	   <name>numberOfIterations</name>
+	   <longflag>--nInt</longflag>
+	   <label>Number of Itereations</label>
+	   <description><![CDATA[Set the number of iterations to the MRF label refinement step.]]></description>
+	   <default>30</default>
+	   <constraints>
+	   <minimum>1</minimum>
+	   <maximum>100</maximum>
+	   <step>1</step>
+	   </constraints>
+	</integer> 
+	<integer>
+	   <name>smoothingFactor</name>
+	   <longflag>--sFactor</longflag>
+	   <label>Smoothing Factor</label>
+	   <description><![CDATA[Set the smoothing factor to the MRF label refinement step.]]></description>
+	   <default>3</default>
+	   <constraints>
+	   <minimum>1</minimum>
+	   <maximum>10</maximum>
+	   <step>1</step>
+	   </constraints>
+	</integer>
 </parameters>
 </executable>
