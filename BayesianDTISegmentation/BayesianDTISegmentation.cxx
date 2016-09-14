@@ -68,8 +68,7 @@ int DoIt( int argc, char * argv[], T )
     typename BayesianInitializerType::Pointer bayesianInitializer = BayesianInitializerType::New();
 
     bayesianInitializer->SetInput( reader->GetOutput() );
-    //        bayesianInitializer->SetNumberOfClasses( numClass );// Background, WM, GM and CSF
-    bayesianInitializer->SetNumberOfClasses( 3 );
+    bayesianInitializer->SetNumberOfClasses( 2 ); // Always set to 2 classes: Lesion and non-Lesions probability
     bayesianInitializer->Update();
 
     typedef itk::BayesianClassifierImageFilter< VectorInputImageType,OutputPixelType, PosteriorType,PriorType >   ClassifierFilterType;
@@ -77,50 +76,23 @@ int DoIt( int argc, char * argv[], T )
 
     bayesClassifier->SetInput( bayesianInitializer->GetOutput() );
 
+    string priorsTemplate = "";
     if (priorsImage == "Multiple Sclerosis DTI Lesions") {
-        string priorsTemplate = "";
-        if ((mapType == "FractionalAnisotropy") & (mapResolution == "1mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-FA-1mm.nii.gz";
-        }else if ((mapType == "MeanDiffusivity") & (mapResolution == "1mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-MD-1mm.nii.gz";
-        }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "1mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-RA-1mm.nii.gz";
-        }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "1mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-PerD-1mm.nii.gz";
-        }else if ((mapType == "ParallelDiffusivity") & (mapResolution == "1mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-ParD-1mm.nii.gz";
-        }else if ((mapType == "FractionalAnisotropy") & (mapResolution == "2mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-FA-2mm.nii.gz";
-        }else if ((mapType == "MeanDiffusivity") & (mapResolution == "2mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-MD-2mm.nii.gz";
-        }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "2mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-RA-2mm.nii.gz";
-        }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "2mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-PerD-2mm.nii.gz";
-        }else if ((mapType == "ParallelDiffusivity") & (mapResolution == "2mm")) {
-            priorsTemplate="USP-ICBM-MS-BayesPriors-ParD-2mm.nii.gz";
+        if (resolution == "1mm") {
+            priorsTemplate="USP-ICBM-MSLesionPriors-30-1mm.nii.gz";
+        }else {
+            priorsTemplate="USP-ICBM-MSLesionPriors-30-2mm.nii.gz";
         }
-
-        //    Read the DTI Statistical Template
+        //    Read the MS lesion priors probability image
         stringstream TEMPLATE_path;
         TEMPLATE_path<<HOME_DIR<<STATISTICALTEMPLATESFOLDER<<PATH_SEPARATOR<<priorsTemplate;
         typename PriorsReaderType::Pointer priorsReader = PriorsReaderType::New();
         priorsReader->SetFileName(TEMPLATE_path.str().c_str());
         priorsReader->Update();
 
-        //Setting the priors probability in the Bayesian framework
         bayesClassifier->SetPriors(priorsReader->GetOutput());
-
-        // Write the output file
-        typedef itk::ImageFileWriter<ClassifierFilterType::OutputImageType> WriterType;
-        typename WriterType::Pointer writer = WriterType::New();
-        writer->SetFileName( outputLabel.c_str() );
-        writer->SetInput( bayesClassifier->GetOutput() );
-        writer->SetUseCompression(1);
-        writer->Update();
-
-        return EXIT_SUCCESS;
     }
+
 
     // Write the output file
     typedef itk::ImageFileWriter<ClassifierFilterType::OutputImageType> WriterType;
@@ -131,8 +103,6 @@ int DoIt( int argc, char * argv[], T )
     writer->Update();
 
     return EXIT_SUCCESS;
-    //    }
-
 }
 
 } // end of anonymous namespace

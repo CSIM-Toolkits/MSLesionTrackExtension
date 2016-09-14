@@ -39,22 +39,10 @@
 	      <element>Multiple Sclerosis DTI Lesions</element>
 	</string-enumeration>
     <string-enumeration>
-      <name>mapType</name>
-	<longflag>--diffMap</longflag>
-	<description><![CDATA[Choose the diffusion map inserted in the input image field.]]></description>
-	<label>Diffusion Map Type</label>
-	<default>FractionalAnisotropy</default>
-	<element>FractionalAnisotropy</element>
-	<element>MeanDiffusivity</element>
-	<element>RelativeAnisotropy</element>
-	<element>PerpendicularDiffusivity</element>
-	<element>ParallelDiffusivity</element>
-    </string-enumeration>
-    <string-enumeration>
-      <name>mapResolution</name>
-	<longflag>--diffMapRes</longflag>
-	<description><![CDATA[Choose the diffusion map resolution.]]></description>
-	<label>Diffusion Map Resolution</label>
+      <name>resolution</name>
+	<longflag>--res</longflag>
+	<description><![CDATA[Choose the image resolution.]]></description>
+	<label>Image Resolution</label>
 	<default>2mm</default>
 	<element>2mm</element>
 	<element>1mm</element>
