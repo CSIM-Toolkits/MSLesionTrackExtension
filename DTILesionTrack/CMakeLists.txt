@@ -39,12 +39,23 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
             DTI-Templates\\USP-ICBM-FA-20-2mm.nii.gz
 	    DTI-Templates\\USP-ICBM-FA-131-1mm.nii.gz
             DTI-Templates\\USP-ICBM-FA-131-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-MD-131-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-MD-131-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-RA-131-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-RA-131-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-VR-131-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-VR-131-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-PerpDiff-131-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-PerpDiff-131-2mm.nii.gz
+
             WMTracts-Templates\\JHU-ICBM-tracts-prob-2mm.nii.gz
             WMTracts-Templates\\JHU-ICBM-tracts-prob-1mm.nii.gz
+
             Structural-Templates\\MNI152_T1_2mm_brain_wm.nii.gz
             Structural-Templates\\MNI152_T1_1mm_brain_wm.nii.gz
    	    Structural-Templates\\MNI152_T1_1mm_brain.nii.gz
 	    Structural-Templates\\MNI152_T1_2mm_brain.nii.gz
+
             StatisticalBrainSegmentation-Templates\\USP-ICBM-FAmean-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-FAmean-131-2mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MDmean-131-1mm.nii.gz
@@ -66,8 +77,8 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-2mm.nii.gz
 
-	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-1mm.nii.gz
-	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-2mm.nii.gz
+	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-1mm.nii.gz
+	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-2mm.nii.gz
             )
     endif (WIN32)
     if (UNIX)
@@ -78,12 +89,23 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
             DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz
 	    DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz
             DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-MD-131-1mm.nii.gz
+            DTI-Templates/USP-ICBM-MD-131-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-RA-131-1mm.nii.gz
+            DTI-Templates/USP-ICBM-RA-131-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-VR-131-1mm.nii.gz
+            DTI-Templates/USP-ICBM-VR-131-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-PerpDiff-131-1mm.nii.gz
+            DTI-Templates/USP-ICBM-PerpDiff-131-2mm.nii.gz
+
             WMTracts-Templates/JHU-ICBM-tracts-prob-2mm.nii.gz
             WMTracts-Templates/JHU-ICBM-tracts-prob-1mm.nii.gz
+
             Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz
             Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz
    	    Structural-Templates/MNI152_T1_1mm_brain.nii.gz
 	    Structural-Templates/MNI152_T1_2mm_brain.nii.gz
+
             StatisticalBrainSegmentation-Templates/USP-ICBM-FAmean-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-FAmean-131-2mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-MDmean-131-1mm.nii.gz
@@ -105,8 +127,12 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-2mm.nii.gz
 
-            StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-1mm.nii.gz
-	    StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-2mm.nii.gz
+            StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-46-1mm.nii.gz
+	    StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-46-2mm.nii.gz
+
+	    diffeomorphicRegistration.sh
+	    antsRegistrationSyN.sh
+	    antsRegistrationSyNQuick.sh
             )
     endif (UNIX)
 
@@ -140,12 +166,23 @@ if (WIN32)
         "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-2mm.nii.gz"
 	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-2mm.nii.gz"
+
         "%userprofile%\\MSLesionTrack-Data\\WMTracts-Templates\\JHU-ICBM-tracts-prob-2mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\WMTracts-Templates\\JHU-ICBM-tracts-prob-1mm.nii.gz"
+
         "%userprofile%\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain_wm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain_wm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz"
+
         "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-FAmean-131-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-FAmean-131-2mm.nii.gz"
 	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MDmean-131-1mm.nii.gz"
@@ -167,8 +204,8 @@ if (WIN32)
 	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-VRstd-131-2mm.nii.gz"
 
-	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-1mm.nii.gz"
-        "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-30-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-2mm.nii.gz"
         )
 endif (WIN32)
 if (UNIX)
@@ -180,12 +217,23 @@ if (UNIX)
         "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz"
 	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz"
         "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-131-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-131-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-131-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-131-2mm.nii.gz"
+
         "~/MSLesionTrack-Data/WMTracts-Templates/JHU-ICBM-tracts-prob-2mm.nii.gz"
         "~/MSLesionTrack-Data/WMTracts-Templates/JHU-ICBM-tracts-prob-1mm.nii.gz"
+
         "~/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz"
         "~/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz"
         "~/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz"
         "~/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz"
+
         "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-FAmean-131-1mm.nii.gz"
         "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-FAmean-131-2mm.nii.gz"
 	"~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MDmean-131-1mm.nii.gz"
@@ -207,8 +255,12 @@ if (UNIX)
 	"~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-1mm.nii.gz"
         "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-VRstd-131-2mm.nii.gz"
 
-	"~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-1mm.nii.gz"
-        "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-30-2mm.nii.gz"
+	"~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-46-1mm.nii.gz"
+        "~/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates/USP-ICBM-MSLesionPriors-46-2mm.nii.gz"
+
+	"~/MSLesionTrack-Data/diffeomorphicRegistration.sh"
+	"~/MSLesionTrack-Data/antsRegistrationSyN.sh"
+	"~/MSLesionTrack-Data/antsRegistrationSyNQuick.sh"
         )
 endif (UNIX)
 
