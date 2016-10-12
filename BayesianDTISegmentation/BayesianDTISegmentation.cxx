@@ -3,6 +3,23 @@
 #include "itkImageRegionConstIterator.h"
 #include "itkImageRegionIterator.h"
 
+// Utils
+#include "itkRescaleIntensityImageFilter.h"
+#include "itkAbsImageFilter.h"
+
+//Histogram Matching
+#include "itkHistogramMatchingImageFilter.h"
+
+//Substract Image Filter
+#include "itkSubtractImageFilter.h"
+
+//Threshold Image Filter
+#include "itkThresholdImageFilter.h"
+
+//Sigmoid Image Enhancement
+#include "itkLogisticContrastEnhancementImageFilter.h"
+#include "itkSigmoidImageFilter.h"
+
 //Segmentation Methods
 #include "itkBayesianClassifierInitializationImageFilter.h"
 #include "itkBayesianClassifierImageFilter.h"
@@ -59,15 +76,130 @@ int DoIt( int argc, char * argv[], T )
     typedef itk::ImageFileReader<InputImageType>                ReaderType;
     typedef itk::ImageFileReader<VectorInputImageType>          PriorsReaderType;
 
-    typename ReaderType::Pointer reader = ReaderType::New();
-    reader->SetFileName( inputVolume.c_str() );
-    reader->Update();
+    typename ReaderType::Pointer inputReader = ReaderType::New();
+    inputReader->SetFileName( inputVolume.c_str() );
+    inputReader->Update();
+
+    typename ReaderType::Pointer referenceReader = ReaderType::New();
+
+    string referenceTemplate = "";
+    if ((mapType == "FractionalAnisotropy") & (mapResolution == "1mm")) {
+        referenceTemplate="USP-ICBM-FAmean-131-1mm.nii.gz";
+    }else if ((mapType == "MeanDiffusivity") & (mapResolution == "1mm")) {
+        referenceTemplate="USP-ICBM-MDmean-131-1mm.nii.gz";
+    }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "1mm")) {
+        referenceTemplate="USP-ICBM-RAmean-131-1mm.nii.gz";
+    }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "1mm")) {
+        referenceTemplate="USP-ICBM-PerpDiffmean-131-1mm.nii.gz";
+    }else if ((mapType == "VolumeRatio") & (mapResolution == "1mm")) {
+        referenceTemplate="USP-ICBM-VRmean-131-1mm.nii.gz";
+    }else if ((mapType == "FractionalAnisotropy") & (mapResolution == "2mm")) {
+        referenceTemplate="USP-ICBM-FAmean-131-2mm.nii.gz";
+    }else if ((mapType == "MeanDiffusivity") & (mapResolution == "2mm")) {
+        referenceTemplate="USP-ICBM-MDmean-131-2mm.nii.gz";
+    }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "2mm")) {
+        referenceTemplate="USP-ICBM-RAmean-131-2mm.nii.gz";
+    }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "2mm")) {
+        referenceTemplate="USP-ICBM-PerpDiffmean-131-2mm.nii.gz";
+    }else if ((mapType == "VolumeRatio") & (mapResolution == "2mm")) {
+        referenceTemplate="USP-ICBM-VRmean-131-2mm.nii.gz";
+    }
+
+    // Read the DTI Template
+    stringstream referenceTEMPLATE_path;
+    referenceTEMPLATE_path<<HOME_DIR<<STATISTICALTEMPLATESFOLDER<<PATH_SEPARATOR<<referenceTemplate;
+    referenceReader->SetFileName(referenceTEMPLATE_path.str().c_str());
+    referenceReader->Update();
+    std::cout<<"Reference image: "<<referenceTemplate<<std::endl;
+
+    //Histogram matching step
+    typedef itk::HistogramMatchingImageFilter<InputImageType, InputImageType> HistogramMatchType;
+    typename HistogramMatchType::Pointer histogramMatch = HistogramMatchType::New();
+    histogramMatch->SetSourceImage(inputReader->GetOutput());
+    histogramMatch->SetReferenceImage(referenceReader->GetOutput());
+    histogramMatch->SetNumberOfHistogramLevels(128);
+    histogramMatch->SetNumberOfMatchPoints(10000);
+
+    //Image subtraction with the DTI atlas
+    typedef itk::SubtractImageFilter<InputImageType,InputImageType, InputImageType> SubtractType;
+    typename SubtractType::Pointer subtract = SubtractType::New();
+    subtract->SetInput1(referenceReader->GetOutput());
+    subtract->SetInput2(histogramMatch->GetOutput());
+
+    //Cleaning unrelated differences from the difference image
+    typedef itk::ThresholdImageFilter<InputImageType>         ThresholderType;
+    typename ThresholderType::Pointer cleanVoxels = ThresholderType::New();
+    cleanVoxels->SetInput(subtract->GetOutput());
+    if (mapType=="FractionalAnisotropy") {
+        cleanVoxels->SetLower(static_cast<InputPixelType>(0.0));
+        cleanVoxels->SetUpper(static_cast<InputPixelType>(1.0));
+        cleanVoxels->SetOutsideValue(static_cast<InputPixelType>(0.0));
+    }else if (mapType=="MeanDiffusivity") {
+        cleanVoxels->SetLower(static_cast<InputPixelType>(-1.0));
+        cleanVoxels->SetUpper(static_cast<InputPixelType>(0.0));
+        cleanVoxels->SetOutsideValue(static_cast<InputPixelType>(0.0));
+    }else if (mapType=="RelativeAnisotropy") {
+        cleanVoxels->SetLower(static_cast<InputPixelType>(0.0));
+        cleanVoxels->SetUpper(static_cast<InputPixelType>(1.0));
+        cleanVoxels->SetOutsideValue(static_cast<InputPixelType>(0.0));
+    }else if (mapType=="ParallelDiffusivity") {
+        cleanVoxels->SetLower(static_cast<InputPixelType>(-1.0));
+        cleanVoxels->SetUpper(static_cast<InputPixelType>(0.0));
+        cleanVoxels->SetOutsideValue(static_cast<InputPixelType>(0.0));
+    }else if (mapType=="VolumeRatio") {
+        cleanVoxels->SetLower(static_cast<InputPixelType>(-1.0));
+        cleanVoxels->SetUpper(static_cast<InputPixelType>(0.0));
+        cleanVoxels->SetOutsideValue(static_cast<InputPixelType>(0.0));
+    }
+    cleanVoxels->Update();
+
+    //Return absolute pixel values image
+    typedef itk::AbsImageFilter<InputImageType, InputImageType> AbsoluteImageType;
+    typename AbsoluteImageType::Pointer abs = AbsoluteImageType::New();
+    abs->SetInput(cleanVoxels->GetOutput());
+
+    //Rescale pixel intensity to [0,1] range
+    typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescalerType;
+    typename RescalerType::Pointer rescaler = RescalerType::New();
+    rescaler->SetOutputMinimum(0.0);
+    rescaler->SetOutputMaximum(1.0);
+    rescaler->SetInput(abs->GetOutput());
+
+    //Find Sigmoid optimum parameters
+    typedef itk::LogisticContrastEnhancementImageFilter<InputImageType, InputImageType> OptimumSigmoidParametersType;
+    typename OptimumSigmoidParametersType::Pointer optSigmoid = OptimumSigmoidParametersType::New();
+    optSigmoid->SetInput(rescaler->GetOutput());
+    if (thrMethod == "MaxEntropy") {
+        optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::MAXENTROPY);
+    }else if (thrMethod == "Otsu") {
+        optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::OTSU);
+    }else if (thrMethod == "Renyi") {
+        optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::RENYI);
+    }else if (thrMethod == "Moments") {
+        optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::MOMENTS);
+    }else if (thrMethod == "IsoData") {
+        optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::ISODATA);
+    }else if (thrMethod == "Yen") {
+        optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::YEN);
+    }
+    optSigmoid->Update();
+    std::cout<<"Optimum [Alpha,Beta] = [ "<<optSigmoid->GetAlpha()<<" , "<<optSigmoid->GetBeta()<<" ]"<<std::endl;
+
+    //Sigmoid lesion enhancement step
+    typedef itk::SigmoidImageFilter<InputImageType,InputImageType> SigmoidType;
+    typename SigmoidType::Pointer sigmoid = SigmoidType::New();
+    sigmoid->SetInput(rescaler->GetOutput());
+    sigmoid->SetOutputMinimum(0.0);
+    sigmoid->SetOutputMaximum(1.0);
+    sigmoid->SetAlpha(optSigmoid->GetAlpha());
+    sigmoid->SetBeta(optSigmoid->GetBeta());
+
 
     //Bayesian Segmentation Approach
     typedef itk::BayesianClassifierInitializationImageFilter< InputImageType >         BayesianInitializerType;
     typename BayesianInitializerType::Pointer bayesianInitializer = BayesianInitializerType::New();
 
-    bayesianInitializer->SetInput( reader->GetOutput() );
+    bayesianInitializer->SetInput( sigmoid->GetOutput() );
     bayesianInitializer->SetNumberOfClasses( 2 ); // Always set to 2 classes: Lesion and non-Lesions probability
     bayesianInitializer->Update();
 
@@ -78,16 +210,16 @@ int DoIt( int argc, char * argv[], T )
 
     string priorsTemplate = "";
     if (priorsImage == "Multiple Sclerosis DTI Lesions") {
-        if (resolution == "1mm") {
-            priorsTemplate="USP-ICBM-MSLesionPriors-30-1mm.nii.gz";
+        if (mapResolution == "1mm") {
+            priorsTemplate="USP-ICBM-MSLesionPriors-46-1mm.nii.gz";
         }else {
-            priorsTemplate="USP-ICBM-MSLesionPriors-30-2mm.nii.gz";
+            priorsTemplate="USP-ICBM-MSLesionPriors-46-2mm.nii.gz";
         }
         //    Read the MS lesion priors probability image
-        stringstream TEMPLATE_path;
-        TEMPLATE_path<<HOME_DIR<<STATISTICALTEMPLATESFOLDER<<PATH_SEPARATOR<<priorsTemplate;
+        stringstream priors_path;
+        priors_path<<HOME_DIR<<STATISTICALTEMPLATESFOLDER<<PATH_SEPARATOR<<priorsTemplate;
         typename PriorsReaderType::Pointer priorsReader = PriorsReaderType::New();
-        priorsReader->SetFileName(TEMPLATE_path.str().c_str());
+        priorsReader->SetFileName(priors_path.str().c_str());
         priorsReader->Update();
 
         bayesClassifier->SetPriors(priorsReader->GetOutput());
@@ -101,6 +233,7 @@ int DoIt( int argc, char * argv[], T )
     writer->SetInput( bayesClassifier->GetOutput() );
     writer->SetUseCompression(1);
     writer->Update();
+
 
     return EXIT_SUCCESS;
 }

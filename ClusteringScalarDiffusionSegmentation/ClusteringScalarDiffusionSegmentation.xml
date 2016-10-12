@@ -41,99 +41,32 @@
 	<element>FractionalAnisotropy</element>
 	<element>MeanDiffusivity</element>
         <element>RelativeAnisotropy</element>
-	<element>ParallelDiffusivity</element>
+	<element>PerpendicularDiffusivity</element>
 	<element>VolumeRatio</element>
     </string-enumeration>
-    <string-enumeration>
-      <name>clusterMethod</name>
-	<longflag>--cluster</longflag>
-	<description><![CDATA[Choose the clustering method.]]></description>
-	<label>Clustering Method</label>
-	<default>KMeans</default>
-	<element>KMeans</element>
-	<element>FuzzyCMeans</element>
-        <element>KernelFuzzyCMeans</element>
-    </string-enumeration>
-  </parameters>
-<parameters advanced="true">
-  <label>K-means Parameters</label>
-    <description><![CDATA[K-Means clustering parameters]]></description>
-    <double-vector>
- 	      <name>initMeans</name>
- 	      <longflag>--initMeans</longflag>
- 	      <description><![CDATA[A first approximation for the mean value for each tissue class.]]></description>
- 	      <label>Tissues Mean Value Guess</label>
- 	      <default>0.0,0.1,0.4</default>
- 	    </double-vector>
-  </parameters>
- <parameters advanced="true">
-  <label>Fuzzy C-Means Parameters</label>
-    <description><![CDATA[Fuzzy C-Means clustering parameters]]></description>
-    <double-vector>
- 	      <name>meanGuess</name>
- 	      <longflag>--means</longflag>
- 	      <description><![CDATA[A first approximation for the mean value for each tissue class.]]></description>
- 	      <label>Tissues Mean Value Guess</label>
- 	      <default>0.1,0.4</default>
- 	    </double-vector>
   </parameters>
 <parameters>
 <label>Image Preprocessing Parameters</label>
-    <description><![CDATA[Image pre-processing  parameters]]></description>
-        <float>
-	   <name>alpha</name>
-	   <longflag>--alpha</longflag>
-	   <label>Alpha</label>
-	   <description><![CDATA[Set the alpha paramters for the Sigmoid function lesion enhancement step.]]></description>
-	   <default>0.05</default>
-	   <constraints>
-	   <minimum>-1</minimum>
-	   <maximum>1</maximum>
-	   <step>0.01</step>
-	   </constraints>
-	</float> 
-        <float>
-	   <name>beta</name>
-	   <longflag>--beta</longflag>
-	   <label>Beta</label>
-	   <description><![CDATA[Set the beta paramters for the Sigmoid function lesion enhancement step.]]></description>
-	   <default>0.35</default>
-	   <constraints>
-	   <minimum>0</minimum>
-	   <maximum>1</maximum>
-	   <step>0.01</step>
-	   </constraints>
-	</float> 
-        <integer>
+    <description><![CDATA[Image pre-processing  parameters]]></description>        
+    <string-enumeration>
+      <name>thrMethod</name>
+	<longflag>--thrMethod</longflag>
+	<description><![CDATA[Choose the threshold method that will optimize the logistic lesion enhancment parameters.]]></description>
+	<label>Threshold Method</label>
+	<default>Otsu</default>
+	<element>MaxEntropy</element>
+	<element>Otsu</element>
+        <element>Yen</element>
+	<element>IsoData</element>
+	<element>Moments</element>
+        <element>Renyi</element>
+    </string-enumeration>
+	<integer>
 	   <name>numClass</name>
 	   <longflag>--nClass</longflag>
 	   <label>Number of Classes</label>
 	   <description><![CDATA[Set the number of tissues classes desired to segment in the input image.]]></description>
-	   <default>3</default>
-	   <constraints>
-	   <minimum>1</minimum>
-	   <maximum>10</maximum>
-	   <step>1</step>
-	   </constraints>
-	</integer> 
-	<integer>
-	   <name>numberOfIterations</name>
-	   <longflag>--nInt</longflag>
-	   <label>Number of Itereations</label>
-	   <description><![CDATA[Set the number of iterations to the MRF label refinement step.]]></description>
-	   <default>30</default>
-	   <constraints>
-	   <minimum>1</minimum>
-	   <maximum>100</maximum>
-	   <step>1</step>
-	   </constraints>
-	</integer> 
-	<integer>
-	   <name>smoothingFactor</name>
-	   <longflag>--sFactor</longflag>
-	   <label>Smoothing Factor</label>
-	   <description><![CDATA[Set the smoothing factor to the MRF label refinement step.]]></description>
-	   <default>3</default>
+	   <default>2</default>
 	   <constraints>
 	   <minimum>1</minimum>
 	   <maximum>10</maximum>

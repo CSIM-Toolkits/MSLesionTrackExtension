@@ -5,6 +5,12 @@
 #include "itkCastImageFilter.h"
 #include "itkNeighborhoodIterator.h"
 
+//Utils
+#include "itkHistogramMatchingImageFilter.h"
+
+//System
+#include "stdlib.h"
+
 #include "itkPluginUtilities.h"
 
 #include "LSDPBrainSegmentationCLP.h"
@@ -72,15 +78,10 @@ int DoIt( int argc, char * argv[], T )
     typedef itk::Image<OutputPixelType, Dimension>          OutputImageType;
 
     typedef itk::ImageFileReader<InputImageType>             ReaderType;
-    typedef itk::ImageFileReader<OutputImageType>            LabelReaderType;
 
     typename ReaderType::Pointer inputReader = ReaderType::New();
     inputReader->SetFileName( inputVolume.c_str() );
     inputReader->Update();
-
-    typename LabelReaderType::Pointer inputLabelReader = LabelReaderType::New();
-    inputLabelReader->SetFileName( inputLabel.c_str() );
-    inputLabelReader->Update();
 
     typename ReaderType::Pointer meanStatReader = ReaderType::New();
     typename ReaderType::Pointer stdStatReader = ReaderType::New();
@@ -128,7 +129,6 @@ int DoIt( int argc, char * argv[], T )
     meanStatReader->Update();
     stdStatReader->Update();
 
-
     //    Start brain statistical segmentation
     //    Create the Probability Image
     typename InputImageType::Pointer probabilityVolume = InputImageType::New();
@@ -138,55 +138,35 @@ int DoIt( int argc, char * argv[], T )
     probabilityVolume->Allocate();
 
     //     Set iterators
-    typedef itk::NeighborhoodIterator<OutputImageType>              NeighborOutputIteratorType;
-    typedef itk::NeighborhoodIterator<InputImageType>               NeighborInputIteratorType;
-    typename NeighborInputIteratorType::RadiusType radius;
-    radius.Fill(1);
-    NeighborOutputIteratorType       labelIt(radius, inputLabelReader->GetOutput(), inputLabelReader->GetOutput()->GetRequestedRegion());
-    NeighborInputIteratorType        meanStatIt(radius, meanStatReader->GetOutput(), meanStatReader->GetOutput()->GetRequestedRegion());
-    NeighborInputIteratorType        stdStatIt(radius, stdStatReader->GetOutput(), stdStatReader->GetOutput()->GetRequestedRegion());
-    NeighborInputIteratorType        probIt(radius, probabilityVolume, probabilityVolume->GetRequestedRegion());
-    NeighborInputIteratorType        inputIt(radius, inputReader->GetOutput(), inputReader->GetOutput()->GetRequestedRegion());
+    typedef itk::ImageRegionIterator<InputImageType>        RegionIterator;
+    RegionIterator      meanStatIt(meanStatReader->GetOutput(), meanStatReader->GetOutput()->GetRequestedRegion());
+    RegionIterator      stdStatIt(stdStatReader->GetOutput(), stdStatReader->GetOutput()->GetRequestedRegion());
+    RegionIterator      probIt(probabilityVolume, probabilityVolume->GetRequestedRegion());
+    RegionIterator      inputIt(inputReader->GetOutput(), inputReader->GetOutput()->GetRequestedRegion());
 
-    int iteration = 5;
-    while (iteration>0) {
-        meanStatIt.GoToBegin();
-        stdStatIt.GoToBegin();
-        probIt.GoToBegin();
-        inputIt.GoToBegin();
-        labelIt.GoToBegin();
-        float tScore=0.0;
-        while (!labelIt.IsAtEnd()) {
-            //Jump voxels with zero values
-            if (labelIt.GetCenterPixel()!=static_cast<OutputImageType::PixelType>(0)) {
-                //Check all 3D neighborhood for diffusivity abnormalities
-                for(unsigned int i = 0; i < 27; i++)
-                {
-                    if (labelIt.GetPixel(i)==static_cast<OutputImageType::PixelType>(0)) {
-                        tScore=((inputIt.GetPixel(i)-meanStatIt.GetPixel(i))/stdStatIt.GetPixel(i));
-                        //Calculate the threshold based on the type of diffusivity map
-                        if (LocalDecision(tScore,tThreshold, mapType)) {
-                            probIt.SetPixel(i, 1);
-                        }
-                    }else{
-                        //Adding the previous FLAIR lesion label into the final label image
-                        probIt.SetPixel(i, 2);
-                    }
-                }
-                ++meanStatIt;
-                ++stdStatIt;
-                ++probIt;
-                ++inputIt;
-                ++labelIt;
-            }else{
-                ++meanStatIt;
-                ++stdStatIt;
-                ++probIt;
-                ++inputIt;
-                ++labelIt;
+    meanStatIt.GoToBegin();
+    stdStatIt.GoToBegin();
+    probIt.GoToBegin();
+    inputIt.GoToBegin();
+    float tScore=0.0;
+    while (!meanStatIt.IsAtEnd()) {
+        //Jump voxels with zero values
+        if (meanStatIt.Get()!=static_cast<InputPixelType>(0)) {
+            tScore=((inputIt.Get()-meanStatIt.Get())/stdStatIt.Get());
+            //Calculate the threshold based on the type of diffusivity map
+            if (LocalDecision(tScore,tThreshold, mapType)) {
+                probIt.Set(1);
             }
+            ++meanStatIt;
+            ++stdStatIt;
+            ++probIt;
+            ++inputIt;
+        }else{
+            ++meanStatIt;
+            ++stdStatIt;
+            ++probIt;
+            ++inputIt;
         }
-        iteration--;
     }
 
     //    Cast the probability volume to Label type
@@ -201,6 +181,7 @@ int DoIt( int argc, char * argv[], T )
     writer->SetInput( caster->GetOutput() );
     writer->SetUseCompression(1);
     writer->Update();
+
 
     return EXIT_SUCCESS;
 }

@@ -18,13 +18,6 @@
       <index>0</index>
       <description><![CDATA[Input volume]]></description>
     </image>
-    <image type="label">
-      <name>inputLabel</name>
-      <label>Input Lesion Map</label>
-      <channel>input</channel>
-      <index>2</index>
-      <description><![CDATA[Input lesion map]]></description>
-    </image>
     <string-enumeration>
       <name>mapType</name>
 	<longflag>--diffMap</longflag>
@@ -50,7 +43,7 @@
       <name>outputLabel</name>
       <label>Output Label</label>
       <channel>output</channel>
-      <index>3</index>
+      <index>1</index>
       <description><![CDATA[Output Label]]></description>
     </image>    
   </parameters>
@@ -63,7 +56,6 @@
 	<description><![CDATA[Choose the statistical method that will be used to select the abnormal voxel values in the input image.]]></description>
 	<label>Statistial Method</label>
 	<default>T-Score</default>
-	<element>QEntropy</element>
 	<element>T-Score</element>
     </string-enumeration>
     <float>
@@ -74,7 +66,7 @@
 	<default>2.5</default>
 	<constraints>
  	<minimum>0.1</minimum>
-	<maximum>25</maximum>
+	<maximum>40</maximum>
 	<step>0.1</step>
 	</constraints>
     </float>

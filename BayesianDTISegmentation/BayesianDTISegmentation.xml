@@ -15,16 +15,37 @@
       <name>inputVolume</name>
       <label>Input Volume</label>
       <channel>input</channel>
-      <index>0</index>
+      <index>1</index>
       <description><![CDATA[Input volume]]></description>
     </image>
     <image type="label">
       <name>outputLabel</name>
       <label>Output Label</label>
       <channel>output</channel>
-      <index>1</index>
+      <index>2</index>
       <description><![CDATA[Output Label]]></description>
     </image>
+    <string-enumeration>
+      <name>mapType</name>
+	<longflag>--diffMap</longflag>
+	<description><![CDATA[Choose the diffusion map inserted in the input image field.]]></description>
+	<label>Diffusion Map Type</label>
+	<default>FractionalAnisotropy</default>
+	<element>FractionalAnisotropy</element>
+	<element>MeanDiffusivity</element>
+	<element>RelativeAnisotropy</element>
+	<element>PerpendicularDiffusivity</element>
+	<element>VolumeRatio</element>
+    </string-enumeration>
+    <string-enumeration>
+      <name>mapResolution</name>
+	<longflag>--diffMapRes</longflag>
+	<description><![CDATA[Choose the diffusion map resolution.]]></description>
+	<label>Diffusion Map Resolution</label>
+	<default>2mm</default>
+	<element>2mm</element>
+	<element>1mm</element>
+    </string-enumeration>
   </parameters>
   <parameters>
   <label>Segmentation Parameters</label>
@@ -38,14 +59,18 @@
 	      <element>Unconditional</element>
 	      <element>Multiple Sclerosis DTI Lesions</element>
 	</string-enumeration>
-    <string-enumeration>
-      <name>resolution</name>
-	<longflag>--res</longflag>
-	<description><![CDATA[Choose the image resolution.]]></description>
-	<label>Image Resolution</label>
-	<default>2mm</default>
-	<element>2mm</element>
-	<element>1mm</element>
+  <string-enumeration>
+      <name>thrMethod</name>
+	<longflag>--thrMethod</longflag>
+	<description><![CDATA[Choose the threshold method that will optimize the logistic lesion enhancment parameters.]]></description>
+	<label>Threshold Method</label>
+	<default>Otsu</default>
+	<element>MaxEntropy</element>
+	<element>Otsu</element>
+        <element>Yen</element>
+	<element>IsoData</element>
+	<element>Moments</element>
+        <element>Renyi</element>
     </string-enumeration>
   </parameters>
 </executable>

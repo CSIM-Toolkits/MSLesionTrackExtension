@@ -38,8 +38,8 @@ SEMMacroBuildCLI(
   TARGET_LIBRARIES ${MODULE_TARGET_LIBRARIES}
   INCLUDE_DIRECTORIES ${MODULE_INCLUDE_DIRECTORIES}
   ADDITIONAL_SRCS ${MODULE_SRCS}
-itkSigmoidParametersOptimizationImageCalculator.h
-itkSigmoidParametersOptimizationImageCalculator.hxx
+itkLogisticContrastEnhancementImageFilter.h
+itkLogisticContrastEnhancementImageFilter.hxx
   )
 
 #-----------------------------------------------------------------------------

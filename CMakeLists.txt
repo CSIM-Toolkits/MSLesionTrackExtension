@@ -23,10 +23,8 @@ add_subdirectory(BrainExtractionTool)
 add_subdirectory(DTILesionTrack)
 add_subdirectory(LSDPBrainSegmentation)
 add_subdirectory(BayesianDTISegmentation)
-add_subdirectory(MRFDTISegmentation)
-add_subdirectory(GeodesicDTILesionSegmentation)
-add_subdirectory(FuzzyCMeanDTISegmentation)
 add_subdirectory(ClusteringScalarDiffusionSegmentation)
+add_subdirectory(MorphologicalShapeConstraints)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------
