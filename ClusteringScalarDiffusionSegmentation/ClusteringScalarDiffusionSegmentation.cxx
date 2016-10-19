@@ -4,6 +4,7 @@
 // Utils
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkAbsImageFilter.h"
+#include "itkMaskImageFilter.h"
 
 //Histogram Matching
 #include "itkHistogramMatchingImageFilter.h"
@@ -31,6 +32,24 @@
 
 #include "ClusteringScalarDiffusionSegmentationCLP.h"
 
+#ifdef _WIN32
+#define STATISTICALTEMPLATESFOLDER "\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates"
+#define FIBERBUNDLESTEMPLATESFOLDER "\\MSLesionTrack-Data\\WMTracts-Templates"
+#define WHITEMATTERTEMPLATESFOLDER "\\MSLesionTrack-Data\\Structural-Templates"
+#define PATH_SEPARATOR "\\"
+#define PATH_SEPARATOR_CHAR '\\'
+#define DEL_CMD "del /Q "
+#define MOVE_CMD "move "
+#else
+#define STATISTICALTEMPLATESFOLDER "/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates"
+#define FIBERBUNDLESTEMPLATESFOLDER "/MSLesionTrack-Data/WMTracts-Templates"
+#define WHITEMATTERTEMPLATESFOLDER "/MSLesionTrack-Data/Structural-Templates"
+#define PATH_SEPARATOR "/"
+#define PATH_SEPARATOR_CHAR '/'
+#define DEL_CMD "rm -f "
+#define MOVE_CMD "mv "
+#endif
+
 using namespace std;
 
 // Use an anonymous namespace to keep class types and function names
@@ -44,6 +63,11 @@ namespace
 template <class T>
 int DoIt( int argc, char * argv[], T )
 {
+#ifdef _WIN32
+    char* HOME_DIR=getenv("HOMEPATH");
+#else
+    char* HOME_DIR=getenv("HOME");
+#endif
 
     PARSE_ARGS;
 
@@ -62,6 +86,9 @@ int DoIt( int argc, char * argv[], T )
 
     typename ReaderType::Pointer referenceReader = ReaderType::New();
     referenceReader->SetFileName( referenceVolume.c_str() );
+
+    typename ReaderType::Pointer maskReader = ReaderType::New();
+    typename ReaderType::Pointer wmReader = ReaderType::New();
 
     //Histogram matching step
     typedef itk::HistogramMatchingImageFilter<InputImageType, InputImageType> HistogramMatchType;
@@ -116,10 +143,27 @@ int DoIt( int argc, char * argv[], T )
     rescaler->SetOutputMaximum(1.0);
     rescaler->SetInput(abs->GetOutput());
 
+    //Mask white matter core fiber bundles
+    //Read mask image file
+    stringstream maskFile_path;
+    if (mapResolution == "1mm") {
+        maskFile_path<<HOME_DIR<<FIBERBUNDLESTEMPLATESFOLDER<<PATH_SEPARATOR<<"JHU-ICBM-labels-1mm-mask.nii.gz";
+    }else{
+        maskFile_path<<HOME_DIR<<FIBERBUNDLESTEMPLATESFOLDER<<PATH_SEPARATOR<<"JHU-ICBM-labels-2mm-mask.nii.gz";
+    }
+    maskReader->SetFileName(maskFile_path.str().c_str());
+    maskReader->Update();
+
+    //Apply fiber bundles mask
+    typedef itk::MaskImageFilter<InputImageType, InputImageType>    MaskFilterType;
+    typename MaskFilterType::Pointer mask = MaskFilterType::New();
+    mask->SetInput(rescaler->GetOutput());
+    mask->SetMaskImage(maskReader->GetOutput());
+
     //Find Sigmoid optimum parameters
     typedef itk::LogisticContrastEnhancementImageFilter<InputImageType, InputImageType> LogisticParametersType;
     typename LogisticParametersType::Pointer optSigmoid = LogisticParametersType::New();
-    optSigmoid->SetInput(rescaler->GetOutput());
+    optSigmoid->SetInput(mask->GetOutput());
     if (thrMethod == "MaxEntropy") {
         optSigmoid->SetThresholdMethod(LogisticParametersType::MAXENTROPY);
     }else if (thrMethod == "Otsu") {
@@ -145,11 +189,27 @@ int DoIt( int argc, char * argv[], T )
     sigmoid->SetAlpha(optSigmoid->GetAlpha());
     sigmoid->SetBeta(optSigmoid->GetBeta());
 
+    //Mask the whole white matter
+    stringstream wmFile_path;
+    if (mapResolution == "1mm") {
+        wmFile_path<<HOME_DIR<<WHITEMATTERTEMPLATESFOLDER<<PATH_SEPARATOR<<"MNI152_T1_1mm_brain_wm.nii.gz";
+    }else{
+        wmFile_path<<HOME_DIR<<WHITEMATTERTEMPLATESFOLDER<<PATH_SEPARATOR<<"MNI152_T1_2mm_brain_wm.nii.gz";
+    }
+    wmReader->SetFileName(wmFile_path.str().c_str());
+    wmReader->Update();
+
+    //Apply whole white matter mask
+    typedef itk::MaskImageFilter<InputImageType, InputImageType>    MaskFilterType;
+    typename MaskFilterType::Pointer maskWM = MaskFilterType::New();
+    maskWM->SetInput(sigmoid->GetOutput());
+    maskWM->SetMaskImage(wmReader->GetOutput());
+
     //Lesion segmentation by clustering approach
     //K-Means Segmentation Approach
     typedef itk::ScalarImageKmeansImageFilter< InputImageType > KMeansFilterType;
     typename KMeansFilterType::Pointer kmeansFilter = KMeansFilterType::New();
-    kmeansFilter->SetInput( sigmoid->GetOutput() );
+    kmeansFilter->SetInput( maskWM->GetOutput() );
     const unsigned int numberOfInitialClasses = numClass;
 
     typedef itk::StatisticsImageFilter<InputImageType> StatisticsType;

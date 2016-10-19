@@ -6,6 +6,7 @@
 // Utils
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkAbsImageFilter.h"
+#include "itkMaskImageFilter.h"
 
 //Histogram Matching
 #include "itkHistogramMatchingImageFilter.h"
@@ -30,12 +31,16 @@
 
 #ifdef _WIN32
 #define STATISTICALTEMPLATESFOLDER "\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates"
+#define FIBERBUNDLESTEMPLATESFOLDER "\\MSLesionTrack-Data\\WMTracts-Templates"
+#define WHITEMATTERTEMPLATESFOLDER "\\MSLesionTrack-Data\\Structural-Templates"
 #define PATH_SEPARATOR "\\"
 #define PATH_SEPARATOR_CHAR '\\'
 #define DEL_CMD "del /Q "
 #define MOVE_CMD "move "
 #else
 #define STATISTICALTEMPLATESFOLDER "/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates"
+#define FIBERBUNDLESTEMPLATESFOLDER "/MSLesionTrack-Data/WMTracts-Templates"
+#define WHITEMATTERTEMPLATESFOLDER "/MSLesionTrack-Data/Structural-Templates"
 #define PATH_SEPARATOR "/"
 #define PATH_SEPARATOR_CHAR '/'
 #define DEL_CMD "rm -f "
@@ -81,36 +86,11 @@ int DoIt( int argc, char * argv[], T )
     inputReader->Update();
 
     typename ReaderType::Pointer referenceReader = ReaderType::New();
-
-    string referenceTemplate = "";
-    if ((mapType == "FractionalAnisotropy") & (mapResolution == "1mm")) {
-        referenceTemplate="USP-ICBM-FAmean-131-1mm.nii.gz";
-    }else if ((mapType == "MeanDiffusivity") & (mapResolution == "1mm")) {
-        referenceTemplate="USP-ICBM-MDmean-131-1mm.nii.gz";
-    }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "1mm")) {
-        referenceTemplate="USP-ICBM-RAmean-131-1mm.nii.gz";
-    }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "1mm")) {
-        referenceTemplate="USP-ICBM-PerpDiffmean-131-1mm.nii.gz";
-    }else if ((mapType == "VolumeRatio") & (mapResolution == "1mm")) {
-        referenceTemplate="USP-ICBM-VRmean-131-1mm.nii.gz";
-    }else if ((mapType == "FractionalAnisotropy") & (mapResolution == "2mm")) {
-        referenceTemplate="USP-ICBM-FAmean-131-2mm.nii.gz";
-    }else if ((mapType == "MeanDiffusivity") & (mapResolution == "2mm")) {
-        referenceTemplate="USP-ICBM-MDmean-131-2mm.nii.gz";
-    }else if ((mapType == "RelativeAnisotropy") & (mapResolution == "2mm")) {
-        referenceTemplate="USP-ICBM-RAmean-131-2mm.nii.gz";
-    }else if ((mapType == "PerpendicularDiffusivity") & (mapResolution == "2mm")) {
-        referenceTemplate="USP-ICBM-PerpDiffmean-131-2mm.nii.gz";
-    }else if ((mapType == "VolumeRatio") & (mapResolution == "2mm")) {
-        referenceTemplate="USP-ICBM-VRmean-131-2mm.nii.gz";
-    }
-
-    // Read the DTI Template
-    stringstream referenceTEMPLATE_path;
-    referenceTEMPLATE_path<<HOME_DIR<<STATISTICALTEMPLATESFOLDER<<PATH_SEPARATOR<<referenceTemplate;
-    referenceReader->SetFileName(referenceTEMPLATE_path.str().c_str());
+    referenceReader->SetFileName( referenceVolume.c_str() );
     referenceReader->Update();
-    std::cout<<"Reference image: "<<referenceTemplate<<std::endl;
+
+    typename ReaderType::Pointer maskReader = ReaderType::New();
+    typename ReaderType::Pointer wmReader = ReaderType::New();
 
     //Histogram matching step
     typedef itk::HistogramMatchingImageFilter<InputImageType, InputImageType> HistogramMatchType;
@@ -165,10 +145,27 @@ int DoIt( int argc, char * argv[], T )
     rescaler->SetOutputMaximum(1.0);
     rescaler->SetInput(abs->GetOutput());
 
+    //Mask white matter core fiber bundles
+    //Read mask image file
+    stringstream maskFile_path;
+    if (mapResolution == "1mm") {
+        maskFile_path<<HOME_DIR<<FIBERBUNDLESTEMPLATESFOLDER<<PATH_SEPARATOR<<"JHU-ICBM-labels-1mm-mask.nii.gz";
+    }else{
+        maskFile_path<<HOME_DIR<<FIBERBUNDLESTEMPLATESFOLDER<<PATH_SEPARATOR<<"JHU-ICBM-labels-2mm-mask.nii.gz";
+    }
+    maskReader->SetFileName(maskFile_path.str().c_str());
+    maskReader->Update();
+
+    //Apply fiber bundles mask
+    typedef itk::MaskImageFilter<InputImageType, InputImageType>    MaskFilterType;
+    typename MaskFilterType::Pointer mask = MaskFilterType::New();
+    mask->SetInput(rescaler->GetOutput());
+    mask->SetMaskImage(maskReader->GetOutput());
+
     //Find Sigmoid optimum parameters
     typedef itk::LogisticContrastEnhancementImageFilter<InputImageType, InputImageType> OptimumSigmoidParametersType;
     typename OptimumSigmoidParametersType::Pointer optSigmoid = OptimumSigmoidParametersType::New();
-    optSigmoid->SetInput(rescaler->GetOutput());
+    optSigmoid->SetInput(mask->GetOutput());
     if (thrMethod == "MaxEntropy") {
         optSigmoid->SetThresholdMethod(OptimumSigmoidParametersType::MAXENTROPY);
     }else if (thrMethod == "Otsu") {
@@ -194,12 +191,27 @@ int DoIt( int argc, char * argv[], T )
     sigmoid->SetAlpha(optSigmoid->GetAlpha());
     sigmoid->SetBeta(optSigmoid->GetBeta());
 
+    //Mask the whole white matter
+    stringstream wmFile_path;
+    if (mapResolution == "1mm") {
+        wmFile_path<<HOME_DIR<<WHITEMATTERTEMPLATESFOLDER<<PATH_SEPARATOR<<"MNI152_T1_1mm_brain_wm.nii.gz";
+    }else{
+        wmFile_path<<HOME_DIR<<WHITEMATTERTEMPLATESFOLDER<<PATH_SEPARATOR<<"MNI152_T1_2mm_brain_wm.nii.gz";
+    }
+    wmReader->SetFileName(wmFile_path.str().c_str());
+    wmReader->Update();
+
+    //Apply whole white matter mask
+    typedef itk::MaskImageFilter<InputImageType, InputImageType>    MaskFilterType;
+    typename MaskFilterType::Pointer maskWM = MaskFilterType::New();
+    maskWM->SetInput(sigmoid->GetOutput());
+    maskWM->SetMaskImage(wmReader->GetOutput());
 
     //Bayesian Segmentation Approach
     typedef itk::BayesianClassifierInitializationImageFilter< InputImageType >         BayesianInitializerType;
     typename BayesianInitializerType::Pointer bayesianInitializer = BayesianInitializerType::New();
 
-    bayesianInitializer->SetInput( sigmoid->GetOutput() );
+    bayesianInitializer->SetInput( maskWM->GetOutput() );
     bayesianInitializer->SetNumberOfClasses( 2 ); // Always set to 2 classes: Lesion and non-Lesions probability
     bayesianInitializer->Update();
 
@@ -209,7 +221,7 @@ int DoIt( int argc, char * argv[], T )
     bayesClassifier->SetInput( bayesianInitializer->GetOutput() );
 
     string priorsTemplate = "";
-    if (priorsImage == "Multiple Sclerosis DTI Lesions") {
+    if (priorsImage == "Multiple Sclerosis Lesions") {
         if (mapResolution == "1mm") {
             priorsTemplate="USP-ICBM-MSLesionPriors-46-1mm.nii.gz";
         }else {

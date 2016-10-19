@@ -44,6 +44,15 @@
 	<element>PerpendicularDiffusivity</element>
 	<element>VolumeRatio</element>
     </string-enumeration>
+<string-enumeration>
+      <name>mapResolution</name>
+	<longflag>--diffMapRes</longflag>
+	<description><![CDATA[Choose the diffusion map resolution.]]></description>
+	<label>Diffusion Map Resolution</label>
+	<default>2mm</default>
+	<element>2mm</element>
+	<element>1mm</element>
+    </string-enumeration>
   </parameters>
 <parameters>
 <label>Image Preprocessing Parameters</label>

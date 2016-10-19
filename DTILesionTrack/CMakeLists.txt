@@ -37,6 +37,14 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
             DTI-Templates\\JHU-ICBM-FA-2mm.nii.gz
             DTI-Templates\\USP-ICBM-FA-20-1mm.nii.gz
             DTI-Templates\\USP-ICBM-FA-20-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-MD-20-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-MD-20-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-RA-20-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-RA-20-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-VR-20-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-VR-20-2mm.nii.gz
+	    DTI-Templates\\USP-ICBM-PerpDiff-20-1mm.nii.gz
+            DTI-Templates\\USP-ICBM-PerpDiff-20-2mm.nii.gz
 	    DTI-Templates\\USP-ICBM-FA-131-1mm.nii.gz
             DTI-Templates\\USP-ICBM-FA-131-2mm.nii.gz
 	    DTI-Templates\\USP-ICBM-MD-131-1mm.nii.gz
@@ -50,6 +58,8 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 
             WMTracts-Templates\\JHU-ICBM-tracts-prob-2mm.nii.gz
             WMTracts-Templates\\JHU-ICBM-tracts-prob-1mm.nii.gz
+            WMTracts-Templates\\JHU-ICBM-labels-2mm-mask.nii.gz
+            WMTracts-Templates\\JHU-ICBM-labels-1mm-mask.nii.gz
 
             Structural-Templates\\MNI152_T1_2mm_brain_wm.nii.gz
             Structural-Templates\\MNI152_T1_1mm_brain_wm.nii.gz
@@ -79,6 +89,11 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-1mm.nii.gz
 	    StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-2mm.nii.gz
+
+	    diffeomorphicRegistration.sh
+	    antsRegistrationSyN.sh
+	    antsRegistrationSyNQuick.sh
+	    structuralLesionSegmentation.sh
             )
     endif (WIN32)
     if (UNIX)
@@ -87,6 +102,14 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
             DTI-Templates/JHU-ICBM-FA-2mm.nii.gz
             DTI-Templates/USP-ICBM-FA-20-1mm.nii.gz
             DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-MD-20-1mm.nii.gz
+            DTI-Templates/USP-ICBM-MD-20-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-RA-20-1mm.nii.gz
+            DTI-Templates/USP-ICBM-RA-20-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-VR-20-1mm.nii.gz
+            DTI-Templates/USP-ICBM-VR-20-2mm.nii.gz
+	    DTI-Templates/USP-ICBM-PerpDiff-20-1mm.nii.gz
+            DTI-Templates/USP-ICBM-PerpDiff-20-2mm.nii.gz
 	    DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz
             DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz
 	    DTI-Templates/USP-ICBM-MD-131-1mm.nii.gz
@@ -100,6 +123,8 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 
             WMTracts-Templates/JHU-ICBM-tracts-prob-2mm.nii.gz
             WMTracts-Templates/JHU-ICBM-tracts-prob-1mm.nii.gz
+            WMTracts-Templates/JHU-ICBM-labels-2mm-mask.nii.gz
+            WMTracts-Templates/JHU-ICBM-labels-1mm-mask.nii.gz
 
             Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz
             Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz
@@ -133,6 +158,7 @@ if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
 	    diffeomorphicRegistration.sh
 	    antsRegistrationSyN.sh
 	    antsRegistrationSyNQuick.sh
+	    structuralLesionSegmentation.sh
             )
     endif (UNIX)
 
@@ -164,6 +190,14 @@ if (WIN32)
         "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-FA-2mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-2mm.nii.gz"
+	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-2mm.nii.gz"
 	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-2mm.nii.gz"
 	"%userprofile%\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-1mm.nii.gz"
@@ -177,6 +211,8 @@ if (WIN32)
 
         "%userprofile%\\MSLesionTrack-Data\\WMTracts-Templates\\JHU-ICBM-tracts-prob-2mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\WMTracts-Templates\\JHU-ICBM-tracts-prob-1mm.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\WMTracts-Templates\\JHU-ICBM-labels-2mm-mask.nii.gz"
+        "%userprofile%\\MSLesionTrack-Data\\WMTracts-Templates\\JHU-ICBM-labels-1mm-mask.nii.gz"
 
         "%userprofile%\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain_wm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain_wm.nii.gz"
@@ -206,15 +242,27 @@ if (WIN32)
 
 	"%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-1mm.nii.gz"
         "%userprofile%\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates\\USP-ICBM-MSLesionPriors-46-2mm.nii.gz"
+
+	"%userprofile%\\MSLesionTrack-Data\\diffeomorphicRegistration.sh"
+        "%userprofile%\\MSLesionTrack-Data\\antsRegistrationSyN.sh"
+	"%userprofile%\\MSLesionTrack-Data\\antsRegistrationSyNQuick.sh"
+	"%userprofile%\\MSLesionTrack-Data\\structuralLesionSegmentation.sh"
         )
 endif (WIN32)
 if (UNIX)
     add_custom_target(data-MSLesionTrack ALL DEPENDS
         "~/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-1mm.nii.gz"
-        "~/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-1mm.nii.gz"
         "~/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-2mm.nii.gz"
         "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-1mm.nii.gz"
         "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-2mm.nii.gz"
+	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-1mm.nii.gz"
+        "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-2mm.nii.gz"
 	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz"
         "~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz"
 	"~/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-1mm.nii.gz"
@@ -228,6 +276,8 @@ if (UNIX)
 
         "~/MSLesionTrack-Data/WMTracts-Templates/JHU-ICBM-tracts-prob-2mm.nii.gz"
         "~/MSLesionTrack-Data/WMTracts-Templates/JHU-ICBM-tracts-prob-1mm.nii.gz"
+        "~/MSLesionTrack-Data/WMTracts-Templates/JHU-ICBM-labels-2mm-mask.nii.gz"
+        "~/MSLesionTrack-Data/WMTracts-Templates/JHU-ICBM-labels-1mm-mask.nii.gz"
 
         "~/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz"
         "~/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz"
@@ -261,6 +311,7 @@ if (UNIX)
 	"~/MSLesionTrack-Data/diffeomorphicRegistration.sh"
 	"~/MSLesionTrack-Data/antsRegistrationSyN.sh"
 	"~/MSLesionTrack-Data/antsRegistrationSyNQuick.sh"
+	"~/MSLesionTrack-Data/structuralLesionSegmentation.sh"
         )
 endif (UNIX)
 

@@ -7,6 +7,7 @@
 
 //Utils
 #include "itkHistogramMatchingImageFilter.h"
+#include "itkMaskImageFilter.h"
 
 //System
 #include "stdlib.h"
@@ -17,12 +18,16 @@
 
 #ifdef _WIN32
 #define STATISTICALTEMPLATESFOLDER "\\MSLesionTrack-Data\\StatisticalBrainSegmentation-Templates"
+#define FIBERBUNDLESTEMPLATESFOLDER "\\MSLesionTrack-Data\\WMTracts-Templates"
+#define WHITEMATTERTEMPLATESFOLDER "\\MSLesionTrack-Data\\Structural-Templates"
 #define PATH_SEPARATOR "\\"
 #define PATH_SEPARATOR_CHAR '\\'
 #define DEL_CMD "del /Q "
 #define MOVE_CMD "move "
 #else
 #define STATISTICALTEMPLATESFOLDER "/MSLesionTrack-Data/StatisticalBrainSegmentation-Templates"
+#define FIBERBUNDLESTEMPLATESFOLDER "/MSLesionTrack-Data/WMTracts-Templates"
+#define WHITEMATTERTEMPLATESFOLDER "/MSLesionTrack-Data/Structural-Templates"
 #define PATH_SEPARATOR "/"
 #define PATH_SEPARATOR_CHAR '/'
 #define DEL_CMD "rm -f "
@@ -85,6 +90,8 @@ int DoIt( int argc, char * argv[], T )
 
     typename ReaderType::Pointer meanStatReader = ReaderType::New();
     typename ReaderType::Pointer stdStatReader = ReaderType::New();
+
+    typename ReaderType::Pointer wmReader = ReaderType::New();
 
     string meanStatTemplate = "";
     string stdStatTemplate = "";
@@ -169,11 +176,26 @@ int DoIt( int argc, char * argv[], T )
         }
     }
 
+    //Mask the whole white matter
+    stringstream wmFile_path;
+    if (mapResolution == "1mm") {
+        wmFile_path<<HOME_DIR<<WHITEMATTERTEMPLATESFOLDER<<PATH_SEPARATOR<<"MNI152_T1_1mm_brain_wm.nii.gz";
+    }else{
+        wmFile_path<<HOME_DIR<<WHITEMATTERTEMPLATESFOLDER<<PATH_SEPARATOR<<"MNI152_T1_2mm_brain_wm.nii.gz";
+    }
+    wmReader->SetFileName(wmFile_path.str().c_str());
+    wmReader->Update();
+
+    //Apply whole white matter mask
+    typedef itk::MaskImageFilter<InputImageType, InputImageType>    MaskFilterType;
+    typename MaskFilterType::Pointer maskWM = MaskFilterType::New();
+    maskWM->SetInput(probabilityVolume);
+    maskWM->SetMaskImage(wmReader->GetOutput());
+
     //    Cast the probability volume to Label type
     typedef itk::CastImageFilter<InputImageType, OutputImageType> CastType;
     typename CastType::Pointer caster = CastType::New();
-    caster->SetInput(probabilityVolume);
-
+    caster->SetInput(maskWM->GetOutput());
 
     typedef itk::ImageFileWriter<OutputImageType> WriterType;
     typename WriterType::Pointer writer = WriterType::New();

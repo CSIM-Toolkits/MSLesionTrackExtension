@@ -24,7 +24,6 @@ add_subdirectory(DTILesionTrack)
 add_subdirectory(LSDPBrainSegmentation)
 add_subdirectory(BayesianDTISegmentation)
 add_subdirectory(ClusteringScalarDiffusionSegmentation)
-add_subdirectory(MorphologicalShapeConstraints)
 ## NEXT_MODULE
 
 #-----------------------------------------------------------------------------

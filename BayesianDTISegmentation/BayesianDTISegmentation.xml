@@ -18,11 +18,18 @@
       <index>1</index>
       <description><![CDATA[Input volume]]></description>
     </image>
+    <image>
+      <name>referenceVolume</name>
+      <label>Reference Volume</label>
+      <channel>input</channel>
+      <index>2</index>
+      <description><![CDATA[Reference volume]]></description>
+    </image>
     <image type="label">
       <name>outputLabel</name>
       <label>Output Label</label>
       <channel>output</channel>
-      <index>2</index>
+      <index>3</index>
       <description><![CDATA[Output Label]]></description>
     </image>
     <string-enumeration>
@@ -57,7 +64,7 @@
 	      <label>Priors Distribution</label>
 	      <default>Unconditional</default>
 	      <element>Unconditional</element>
-	      <element>Multiple Sclerosis DTI Lesions</element>
+	      <element>Multiple Sclerosis Lesions</element>
 	</string-enumeration>
   <string-enumeration>
       <name>thrMethod</name>

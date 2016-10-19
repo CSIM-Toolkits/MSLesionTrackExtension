@@ -7,6 +7,7 @@ from os.path import expanduser
 
 import vtk, qt, ctk, slicer
 from SimpleITK.SimpleITK import MaskNegated
+from numpy.f2py.auxfuncs import throw_error
 from slicer.ScriptedLoadableModule import *
 import logging
 
@@ -22,13 +23,13 @@ class DTILesionTrack(ScriptedLoadableModule):
 
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "DTI Lesion Track"  # TODO make this more human readable by adding spaces
+        self.parent.title = "DTI Lesion Track"
         self.parent.categories = ["Segmentation.MS Lesion Track"]
         self.parent.dependencies = []
         self.parent.contributors = [
             "Antonio Carlos da S. Senra Filho (University of Sao Paulo), Luiz Otavio Murta Junior (University of Sao Paulo)"]  # replace with "Firstname Lastname (Organization)"
         self.parent.helpText = """
-    This module aims to segment abnormals voxels from diffusion maps provided from DTI images,
+    This module aims to segment abnormals voxels from a multidimensional MRI data, resulting from T1, T2-FLAIR and DTI scalar maps
      such as the fractional anisotropy (FA), mean diffusivity (MD) and others. This tool is optimized
       to analyse the lesion patterns observed in Multiple Sclerosis disease.
     """
@@ -171,21 +172,6 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         parametersInputFormLayout.addRow("DTI-VR Volume ", self.inputVRSelector)
 
         #
-        # input Initial Lesion Label volume selector
-        #
-        self.inputLesionLabelSelector = slicer.qMRMLNodeComboBox()
-        self.inputLesionLabelSelector.nodeTypes = ["vtkMRMLLabelMapVolumeNode"]
-        self.inputLesionLabelSelector.selectNodeUponCreation = True
-        self.inputLesionLabelSelector.addEnabled = False
-        self.inputLesionLabelSelector.removeEnabled = False
-        self.inputLesionLabelSelector.noneEnabled = True
-        self.inputLesionLabelSelector.showHidden = False
-        self.inputLesionLabelSelector.showChildNodeTypes = False
-        self.inputLesionLabelSelector.setMRMLScene(slicer.mrmlScene)
-        self.inputLesionLabelSelector.setToolTip("Initial Label Volume")
-        parametersInputFormLayout.addRow("Initial Label Volume ", self.inputLesionLabelSelector)
-
-        #
         # Output Parameters Area
         #
         parametersOutputCollapsibleButton = ctk.ctkCollapsibleButton()
@@ -217,17 +203,7 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         #
         self.TemporaryFolderSelector = ctk.ctkDirectoryButton()
         self.TemporaryFolderSelector.setToolTip( "Output folder where intermediate files will be saved.")
-        parametersOutputFormLayout.addRow("Output folder ", self.TemporaryFolderSelector)
-
-        #
-        # Output Lesion Mask Area
-        #
-        # self.setOutputLesionMaskBooleanWidget = ctk.ctkComboBox()
-        # self.setOutputLesionMaskBooleanWidget.addItem("Global")
-        # self.setOutputLesionMaskBooleanWidget.addItem("Separable")
-        # self.setOutputLesionMaskBooleanWidget.setToolTip(
-        #     "Choose if you want to separate the lesions by different label masks or display as a global lesion label mask.")
-        # parametersOutputFormLayout.addRow("Output Lesion Mask ", self.setOutputLesionMaskBooleanWidget)
+        parametersOutputFormLayout.addRow("Output Folder ", self.TemporaryFolderSelector)
 
         #
         # Brain extraction on T1 and FLAIR
@@ -257,6 +233,16 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
             "Use a fast ANTs diffeomorphic registration script on DTI scalar maps in order to fit the brain template to the native space.")
         parametersOutputFormLayout.addRow("Use quick ANTs diffeomorphic registration",
                                           self.setUseANTsnWidget)
+
+        #
+        # Output in ICBM space
+        #
+        self.setUseICBMSpaceWidget = ctk.ctkCheckBox()
+        self.setUseICBMSpaceWidget.setChecked(True)
+        self.setUseICBMSpaceWidget.setToolTip(
+            "The final image label will be set in the ICBM space. If not, the output label will be set to native space.")
+        parametersOutputFormLayout.addRow("Output in ICBM space",
+                                          self.setUseICBMSpaceWidget)
 
         #
         # Noise Attenuation Parameters Area
@@ -310,26 +296,13 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         parametersAdvancedFormLayout = qt.QFormLayout(parametersAdvancedCollapsibleButton)
 
         #
-        # White Matter Tracks Area
-        #
-        # self.setWhiteMatterTracksBooleanWidget = ctk.ctkComboBox()
-        # self.setWhiteMatterTracksBooleanWidget.addItem("All white matter tracks")
-        # self.setWhiteMatterTracksBooleanWidget.addItem("Main white matter tracks")
-        # self.setWhiteMatterTracksBooleanWidget.setToolTip(
-        #     "Choose how many white matter tracks do you want to be analysed in the post-processing step. Option: All tracks = Use all the atlas labels marked in the Mori, et al. ICBM-DTI-81 atlas (DOI:10.1016/j.neuroimage.2007.02.049); Main tracks = Use only the 6 main white matter tracks ()")
-        # parametersAdvancedFormLayout.addRow("White Matter Tracks Evaluation ", self.setWhiteMatterTracksBooleanWidget)
-
-
-
-        #
         # DTI Template Area
         #
         self.setDTITemplateWidget = ctk.ctkComboBox()
-        self.setDTITemplateWidget.addItem("JHU-81")
         self.setDTITemplateWidget.addItem("USP-20")
         self.setDTITemplateWidget.addItem("USP-131")
         self.setDTITemplateWidget.setToolTip(
-            "Choose the DTI template where the input images will be registered. Options: ICBM-DTI-81 (1.5T from John Hopkins University), ICBM-DTI-20 (3.0T 16 averages from University of Sao Paulo) or ICBM-DTI-131 (3.0T from University of Sao Paulo)")
+            "Choose the DTI template where the input images will be registered. Options: ICBM-DTI-20 (3.0T 16 averages from University of Sao Paulo) or ICBM-DTI-131 (3.0T from University of Sao Paulo)")
         parametersAdvancedFormLayout.addRow("DTI Template ", self.setDTITemplateWidget)
 
         #
@@ -341,7 +314,6 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         self.setTemplateResolutionBooleanWidget.setToolTip(
             "Choose the spatial resolution which will be used to whole DTI segmentation pipeline. Options: 1mm or 2mm")
         parametersAdvancedFormLayout.addRow("Template Spatial Resolution ", self.setTemplateResolutionBooleanWidget)
-
 
         #
         # Interpolation Method Area
@@ -355,37 +327,12 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         parametersAdvancedFormLayout.addRow("Interpolation ", self.setInterpolationMethodBooleanWidget)
 
         #
-        # BSpline Grid Size Area
-        #
-        # self.setBSplineGridSizeWidget = ctk.ctkMessageBox()
-        # self.setBSplineGridSizeWidget.setToolTip(" Options: Linear, Tri-linear and Spline")
-        # parametersAdvancedFormLayout.addRow("Template Spatial Resolution ", self.setBSplineGridSizeWidget)
-
-        # #
-        # # Fast Registration Strategy
-        # #
-        # self.setFastRegistrationBooleanWidget = ctk.ctkCheckBox()
-        # self.setFastRegistrationBooleanWidget.setChecked(True)
-        # self.setFastRegistrationBooleanWidget.setToolTip(
-        #     "Calculate all the registration process in the 2mm resolution and, when its finishes, the image is interpolated to 1mm.")
-        # parametersOutputFormLayout.addRow("Use Fast Registration Strategy",
-        #                                   self.setFastRegistrationBooleanWidget)
-
-        # #
-        # # Estimates Patient Lesion Load Area
-        # #
-        # self.setLesionLoadBooleanWidget = ctk.ctkCheckBox()
-        # self.setLesionLoadBooleanWidget.setChecked(True)
-        # self.setLesionLoadBooleanWidget.setToolTip("Output the lesion load metric estimated from the output label.")
-        # parametersAdvancedFormLayout.addRow("Estimates Patient Lesion Load ", self.setLesionLoadBooleanWidget)
-
-        #
         # Statistical Analysis Area
         #
         self.setSegmentationApproachWidget = ctk.ctkComboBox()
+        self.setSegmentationApproachWidget.addItem("Bayesian")
         self.setSegmentationApproachWidget.addItem("LSDP")
         self.setSegmentationApproachWidget.addItem("SpatialClustering")
-        self.setSegmentationApproachWidget.addItem("Bayesian")
         self.setSegmentationApproachWidget.setToolTip(
             "Choose the DTI template where the input images will be registered. Options: Local Statistical Diffusibility Properties (LSDP), Spatial Clustering Outlier, Bayesian ...")
         parametersAdvancedFormLayout.addRow("Segmentation Approach ", self.setSegmentationApproachWidget)
@@ -404,13 +351,16 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
         #
         # Clustering Approach
         #
-        self.setClusteringApproachApproachWidget = ctk.ctkComboBox()
-        self.setClusteringApproachApproachWidget.addItem("KMeans")
-        self.setClusteringApproachApproachWidget.addItem("FuzzyCMeans")
-        self.setClusteringApproachApproachWidget.addItem("KernelFuzzyCMeans")
-        self.setClusteringApproachApproachWidget.setToolTip(
+        self.setThresholdMethodWidget = ctk.ctkComboBox()
+        self.setThresholdMethodWidget.addItem("Otsu")
+        self.setThresholdMethodWidget.addItem("MaxEntropy")
+        self.setThresholdMethodWidget.addItem("Yen")
+        self.setThresholdMethodWidget.addItem("IsoData")
+        self.setThresholdMethodWidget.addItem("Moments")
+        self.setThresholdMethodWidget.addItem("Renyi")
+        self.setThresholdMethodWidget.setToolTip(
             "Choose the type of clustering approach that will be used to estimate the lesions on the brain white matter space. This parameter is only used when Segmentation Approach if SpatialClustering")
-        parametersAdvancedFormLayout.addRow("Clustering Approach ", self.setClusteringApproachApproachWidget)
+        parametersAdvancedFormLayout.addRow("Clustering Approach ", self.setThresholdMethodWidget)
 
         #
         # Clustering Number of Classes
@@ -456,12 +406,12 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
                   , self.inputRASelector.currentNode()
                   , self.inputPerDSelector.currentNode()
                   , self.inputVRSelector.currentNode()
-                  , self.inputLesionLabelSelector.currentNode()
                   , self.outputSelector.currentNode()
                   , self.TemporaryFolderSelector
                   , self.setApplyBrainExtractedBooleanWidget
                   , self.setApplyNoiseAttenuationWidget
                   , self.setUseANTsnWidget
+                  , self.setUseICBMSpaceWidget
                   , self.setFilteringCondutanceWidget
                   , self.setFilteringNumberOfIterationWidget
                   , self.setFilteringQWidget
@@ -470,7 +420,7 @@ class DTILesionTrackWidget(ScriptedLoadableModuleWidget):
                   , self.setDTITemplateWidget.currentText
                   , self.setSegmentationApproachWidget.currentText
                   , self.setLSDPThresholdQWidget
-                  , self.setClusteringApproachApproachWidget.currentText
+                  , self.setThresholdMethodWidget.currentText
                   , self.setClusterNumberOfClassesWidget
                   )
 
@@ -518,8 +468,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         return True
 
     def run(self, inputFLAIRVolume, inputT1Volume, inputFAVolume, inputMDVolume, inputRAVolume, inputPerDVolume,
-            inputVRVolume, inputLabelMapVolume,outputLabelVolume, folderSelector, applyBET, applyNoiseAttenuation, applyQuickANTS,filterCondutance, filterNumInt, filterQ, interpolationMethod,
-            templateDTIResolution, templateDTI, segmentationApproach, lsdpTScoreThreshold, clusteringApproach, clusterNumberOfClasses):
+            inputVRVolume, outputLabelVolume, folderSelector, applyBET, applyNoiseAttenuation, applyQuickANTS, outputICBMSpace,
+            filterCondutance, filterNumInt, filterQ, interpolationMethod,templateDTIResolution, templateDTI,
+            segmentationApproach, lsdpTScoreThreshold, thresholdMethod, clusterNumberOfClasses):
         """
     Run the actual algorithm
     """
@@ -534,12 +485,6 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             slicer.util.showStatusMessage("ERROR: ANTs registration toolkit is not installed in your system. Check the ANTSPATH variable.")
             return True
 
-
-        # # Stop pipeline if the user set ANTs registration in Windows systems
-        # if platform.system() is "Windows":
-        #     slicer.util.showStatusMessage(
-        #         "Windows does not support ANTs. Disable this option and run the DTILesionTrack module again.")
-        #     return False
         #################################################################################################################
         #                   Start the pre-processing step: Brain extraction (optional) and Registration                 #
         #################################################################################################################
@@ -565,7 +510,6 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
 
             slicer.cli.run(slicer.modules.brainextractiontool, None, betParams, wait_for_completion=True)
 
-
         #
         # T1 and FLAIR pre-processing: bias field correction
         #
@@ -573,13 +517,13 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         n4params = {}
         n4params["inputImageName"] = inputT1Volume.GetID()
         n4params["outputImageName"] = inputT1Volume.GetID()
-        slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
+        # slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
 
         slicer.util.showStatusMessage("Pre-processing: Bias field correction on T2-FLAIR...")
         n4params = {}
         n4params["inputImageName"] = inputFLAIRVolume.GetID()
         n4params["outputImageName"] = inputFLAIRVolume.GetID()
-        slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
+        # slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
 
         #
         # T1 and FLAIR pre-processing: noise attenuation
@@ -592,7 +536,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             filterParams["condutance"] = filterCondutance.value
             filterParams["iterations"] = filterNumInt.value
             filterParams["q"] = filterQ.value
-            # slicer.cli.run(slicer.modules.aadimagefilter, None, filterParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.aadimagefilter, None, filterParams, wait_for_completion=True)
 
             slicer.util.showStatusMessage("Pre-processing: T2-FLAIR noise attenuation...")
             filterParams = {}
@@ -601,11 +545,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             filterParams["condutance"] = filterCondutance.value
             filterParams["iterations"] = filterNumInt.value
             filterParams["q"] = filterQ.value
-            # slicer.cli.run(slicer.modules.aadimagefilter, None, filterParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.aadimagefilter, None, filterParams, wait_for_completion=True)
 
-
-
-        slicer.util.showStatusMessage("Step 1/4: Reading brain templates...")
+        slicer.util.showStatusMessage("Step 1/5: Reading brain templates...")
         if platform.system() is "Windows":
             home = expanduser("%userprofile%")
         else:
@@ -657,73 +599,47 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 T1TemplateBrain = "MNI152_T1_2mm_brain"
         else:
             if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                DTITemplate = slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-1mm.nii.gz')
-                MNITemplateMask = slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz')
-                MNITemplateBrain = slicer.util.loadVolume(
+                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-1mm.nii.gz')
+                slicer.util.loadVolume(
                     home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz')
                 DTITemplateNodeName = "JHU-ICBM-FA-1mm"
-                T1TemplateMask = "MNI152_T1_1mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_1mm_brain"
             elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                DTITemplate = slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-2mm.nii.gz')
-                MNITemplateMask = slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz')
-                MNITemplateBrain = slicer.util.loadVolume(
+                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-2mm.nii.gz')
+                slicer.util.loadVolume(
                     home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz')
                 DTITemplateNodeName = 'JHU-ICBM-FA-2mm'
-                T1TemplateMask = "MNI152_T1_2mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_2mm_brain"
             elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                DTITemplate = slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-1mm.nii.gz')
-                MNITemplateMask = slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz')
-                MNITemplateBrain = slicer.util.loadVolume(
+                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-1mm.nii.gz')
+                slicer.util.loadVolume(
                     home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz')
                 DTITemplateNodeName = "USP-ICBM-FA-1mm"
-                T1TemplateMask = "MNI152_T1_1mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_1mm_brain"
             elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                DTITemplate = slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz')
-                MNITemplateMask = slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz')
-                MNITemplateBrain = slicer.util.loadVolume(
+                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz')
+                slicer.util.loadVolume(
                     home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz')
                 DTITemplateNodeName = "USP-ICBM-FA-20-2mm"
-                T1TemplateMask = "MNI152_T1_2mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_2mm_brain"
             elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                DTITemplate = slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz')
-                MNITemplateMask = slicer.util.loadVolume(
-                home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain_wm.nii.gz')
-                MNITemplateBrain = slicer.util.loadVolume(
+                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz')
+                slicer.util.loadVolume(
                     home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz')
                 DTITemplateNodeName = "USP-ICBM-FA-131-1mm"
-                T1TemplateMask = "MNI152_T1_1mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_1mm_brain"
             elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                DTITemplate = slicer.util.loadVolume(
+                slicer.util.loadVolume(
                 home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz')
-                MNITemplateMask = slicer.util.loadVolume(
-                home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain_wm.nii.gz')
-                MNITemplateBrain = slicer.util.loadVolume(
+                slicer.util.loadVolume(
                     home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz')
                 DTITemplateNodeName = "USP-ICBM-FA-131-2mm"
-                T1TemplateMask = "MNI152_T1_2mm_brain_wm"
                 T1TemplateBrain = "MNI152_T1_2mm_brain"
 
         if inputMDVolume != None:
             #Read MD Template
             if platform.system() is "Windows":
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-MD-1mm.nii.gz')
-                    MDTemplateNodeName = "JHU-ICBM-MD-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-MD-2mm.nii.gz')
-                    MDTemplateNodeName = "JHU-ICBM-MD-2mm"
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-1mm.nii.gz')
                     MDTemplateNodeName = "USP-ICBM-20-MD-1mm"
@@ -740,14 +656,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-2mm.nii.gz')
                     MDTemplateNodeName = "USP-ICBM-MD-131-2mm"
             else:
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-MD-1mm.nii.gz')
-                    MDTemplateNodeName = "JHU-ICBM-MD-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-MD-2mm.nii.gz')
-                    MDTemplateNodeName = 'JHU-ICBM-MD-2mm'
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    DTITemplate = slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-1mm.nii.gz')
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                    DTITemplate = slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-1mm.nii.gz')
                     MDTemplateNodeName = "USP-ICBM-MD-1mm"
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
@@ -765,15 +676,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         if inputRAVolume != None:
             # Read RA Template
             if platform.system() is "Windows":
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-RA-1mm.nii.gz')
-                    RATemplateNodeName = "JHU-ICBM-RA-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-RA-2mm.nii.gz')
-                    RATemplateNodeName = "JHU-ICBM-RA-2mm"
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-1mm.nii.gz')
                     RATemplateNodeName = "USP-ICBM-20-RA-1mm"
@@ -790,15 +693,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-2mm.nii.gz')
                     RATemplateNodeName = "USP-ICBM-RA-131-2mm"
             else:
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-RA-1mm.nii.gz')
-                    RATemplateNodeName = "JHU-ICBM-RA-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-RA-2mm.nii.gz')
-                    RATemplateNodeName = 'JHU-ICBM-RA-2mm'
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-1mm.nii.gz')
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-1mm.nii.gz')
                     RATemplateNodeName = "USP-ICBM-RA-1mm"
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
@@ -816,15 +713,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         if inputPerDVolume != None:
             # Read Perp Diff Template
             if platform.system() is "Windows":
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-PerpDiff-1mm.nii.gz')
-                    PerpDiffTemplateNodeName = "JHU-ICBM-PerpDiff-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-PerpDiff-2mm.nii.gz')
-                    PerpDiffTemplateNodeName = "JHU-ICBM-PerpDiff-2mm"
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-1mm.nii.gz')
                     PerpDiffTemplateNodeName = "USP-ICBM-20-PerpDiff-1mm"
@@ -841,15 +730,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-2mm.nii.gz')
                     PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-131-2mm"
             else:
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-PerpDiff-1mm.nii.gz')
-                    PerpDiffTemplateNodeName = "JHU-ICBM-PerpDiff-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-PerpDiff-2mm.nii.gz')
-                    PerpDiffTemplateNodeName = 'JHU-ICBM-PerpDiff-2mm'
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-1mm.nii.gz')
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-1mm.nii.gz')
                     PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-1mm"
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
@@ -867,15 +750,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         if inputVRVolume != None:
             # Read VR Template
             if platform.system() is "Windows":
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-VR-1mm.nii.gz')
-                    VRTemplateNodeName = "JHU-ICBM-VR-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-VR-2mm.nii.gz')
-                    VRTemplateNodeName = "JHU-ICBM-VR-2mm"
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-1mm.nii.gz')
                     VRTemplateNodeName = "USP-ICBM-20-VR-1mm"
@@ -892,15 +767,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                         home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-2mm.nii.gz')
                     VRTemplateNodeName = "USP-ICBM-VR-131-2mm"
             else:
-                if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-VR-1mm.nii.gz')
-                    VRTemplateNodeName = "JHU-ICBM-VR-1mm"
-                elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                    slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-VR-2mm.nii.gz')
-                    VRTemplateNodeName = 'JHU-ICBM-VR-2mm'
-                elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
+                if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
                     DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-1mm.nii.gz')
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-1mm.nii.gz')
                     VRTemplateNodeName = "USP-ICBM-VR-1mm"
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
                     slicer.util.loadVolume(
@@ -915,12 +784,12 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                         home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-2mm.nii.gz')
                     VRTemplateNodeName = "USP-ICBM-VR-131-2mm"
 
-        slicer.util.showStatusMessage("Step 2/4: Registering input volumes...")
+        slicer.util.showStatusMessage("Step 2/5: Registering input volumes...")
 
         #
         # Registering the FLAIR image to T1 image.
         #
-        slicer.util.showStatusMessage("Step 2/4: T1 registration...")
+        slicer.util.showStatusMessage("Step 2/5: T1 registration...")
         registrationFLAIR2T1Transform = slicer.vtkMRMLLinearTransformNode()
         slicer.mrmlScene.AddNode(registrationFLAIR2T1Transform)
         inputFLAIRVolume_reg = slicer.vtkMRMLScalarVolumeNode()
@@ -937,13 +806,13 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         regParams["interpolationMode"] = interpolationMethod.currentText
         regParams["numberOfSamples"] = 200000
 
-        # slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
+        slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
 
 
         #
         # Registering the DTI-FA to T1 image
         #
-        slicer.util.showStatusMessage("Step 2/4: DTI-FA registration...")
+        slicer.util.showStatusMessage("Step 2/5: DTI-FA registration...")
         registrationDTI2T1Transform = slicer.vtkMRMLLinearTransformNode()
         slicer.mrmlScene.AddNode(registrationDTI2T1Transform)
         inputFAVolume_reg = slicer.vtkMRMLScalarVolumeNode()
@@ -960,13 +829,13 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         regParams["interpolationMode"] = interpolationMethod.currentText
         regParams["numberOfSamples"] = 200000
 
-        # slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
+        slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
 
         #
         # Registering the MNI-DTI template to FA native space.
         #
 
-        slicer.util.showStatusMessage("Step 2/4: DTI template registration...")
+        slicer.util.showStatusMessage("Step 2/5: DTI template registration...")
         if applyQuickANTS.isChecked:
             # #Saving files into tmp folder
             # #Patient FA
@@ -977,7 +846,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             # # Use ANTs registration
             # os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
             # os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyNQuick.sh")
-            # os.system(home+"/MSLesionTrack-Data/diffeomorphicRegistration.sh "+folderSelector.directory+" Y")
+            # os.system(home+"/MSLesionTrack-Data/diffeomorphicRegistration.sh "+folderSelector.directory+" Y"+ " N")
 
             #Read registered images and tranforms
             slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz')# DTI Template to native space
@@ -995,7 +864,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             # Use ANTs registration
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyN.sh")
-            os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory+" N")
+            os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory+" N"+ " N")
 
             # Read registered images and tranforms
             slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz')  # DTI Template to native space
@@ -1004,7 +873,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             slicer.util.loadVolume(folderSelector.directory + '/regTemplateWarped.nii.gz')  # DTI Template into patient space
             slicer.util.loadVolume(folderSelector.directory + '/regTemplateInverseWarped.nii.gz')  # Patient in ICBM space
 
-
+        # TODO COREGISTRO COM MD, nao linear, PRECISA SER FEITO NOVAMENTE...so chamar o script ANTs
         #
         # Applying registration transform - MD Volume
         #
@@ -1013,7 +882,6 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             #
             # Registering the MD image with the MNI-DTI template.
             #
-            # USE THE BSPLINE TRANSFORM IN THE FA MAP TO WARP THE REST OF THE INPUT IMAGES
             slicer.util.showStatusMessage("Step 2/4: DTI-MD registration...")
             inputMDVolume_reg = slicer.vtkMRMLScalarVolumeNode()
             slicer.mrmlScene.AddNode(inputMDVolume_reg)
@@ -1091,21 +959,15 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         # The pre-processing is done. Below are the evaluated the lesion maps based on the chosen Statistical Analaysis #
         #################################################################################################################
         #################################################################################################################
-        #                                       Apply the segmentation approach                                         #
+        #                                       Apply the DTI segmentation approach                                     #
         #################################################################################################################
         if (segmentationApproach == 'LSDP'):
-            slicer.util.showStatusMessage("Step 3/4: Performing LSDP segmentation on all data...")
-
-            # if applyANTS.isChecked:
+            slicer.util.showStatusMessage("Step 3/5: Performing LSDP segmentation on all data...")
             #
             # Perform the statistical segmentation - FA map
             #
-            # input=slicer.util.getNode('regTemplateInverseWarped')
             statisticalFASegmentationParams = {}
-            # statisticalFASegmentationParams["inputVolume"] = input.GetID()
             statisticalFASegmentationParams["inputVolume"] = slicer.util.getNode('regTemplateInverseWarped')
-            if inputLabelMapVolume != None:
-                statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
             statisticalFASegmentationParams["mapType"] = "FractionalAnisotropy"
             statisticalFASegmentationParams["mapResolution"] = templateDTIResolution
             statisticalFASegmentationParams["statMethod"] = "T-Score"
@@ -1113,8 +975,6 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             statisticalFASegmentationParams["outputLabel"] = outputLabelVolume.GetID()
 
             slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalFASegmentationParams, wait_for_completion=True)
-
-            #TODO VER PORQUE QUANDO CHAMA PELO PYTHON APARECE UM OUTPUT LABEL PSICODELICO!! MAS SE RODA SEPARADO FAZ NORMAL!
 
             if inputMDVolume != None:
                 #SyN
@@ -1149,13 +1009,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
                 statisticalMDSegmentationParams = {}
                 statisticalMDSegmentationParams["inputVolume"] = inputLSDPMDinICBMVolume.GetID()
-                if inputLabelMapVolume != None:
-                    statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
                 statisticalMDSegmentationParams["mapType"] = "MeanDiffusivity"
                 statisticalMDSegmentationParams["mapResolution"] = templateDTIResolution
                 statisticalMDSegmentationParams["statMethod"] = "T-Score"
                 statisticalMDSegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-                statisticalMDSegmentationParams["outputLabelVolume"] = outputMDLesionLabelNode.GetID()
+                statisticalMDSegmentationParams["outputLabel"] = outputMDLesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalMDSegmentationParams, wait_for_completion=True)
 
@@ -1164,7 +1022,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 inputLSDPRAinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
                 slicer.mrmlScene.AddNode(inputLSDPRAinICBMVolume)
                 antsParams = {}
-                antsParams["inputVolume"] = inputMDVolume_reg.GetID()
+                antsParams["inputVolume"] = inputRAVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPRAinICBMVolume.GetID()
                 antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
                 antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
@@ -1192,13 +1050,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputRALesionLabelNode)
                 statisticalRASegmentationParams = {}
                 statisticalRASegmentationParams["inputVolume"] = inputLSDPRAinICBMVolume.GetID()
-                if inputLabelMapVolume != None:
-                    statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
                 statisticalRASegmentationParams["mapType"] = "RelativeAnisotropy"
                 statisticalRASegmentationParams["mapResolution"] = templateDTIResolution
                 statisticalRASegmentationParams["statMethod"] = "T-Score"
                 statisticalRASegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-                statisticalRASegmentationParams["outputLabelVolume"] = outputRALesionLabelNode.GetID()
+                statisticalRASegmentationParams["outputLabel"] = outputRALesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalRASegmentationParams,
                                wait_for_completion=True)
@@ -1208,12 +1064,12 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 inputLSDPPerDinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
                 slicer.mrmlScene.AddNode(inputLSDPPerDinICBMVolume)
                 antsParams = {}
-                antsParams["inputVolume"] = inputMDVolume_reg.GetID()
+                antsParams["inputVolume"] = inputPerDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPPerDinICBMVolume.GetID()
                 antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
                 antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
                 antsParams["typeOfField"] = "displacement"
-                antsParams["interpolationType"] = interpolationMethod.currentText
+                antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
 
                 slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
@@ -1236,13 +1092,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
                 statisticalPerDSegmentationParams = {}
                 statisticalPerDSegmentationParams["inputVolume"] = inputLSDPPerDinICBMVolume.GetID()
-                if inputLabelMapVolume != None:
-                    statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
                 statisticalPerDSegmentationParams["mapType"] = "PerpendicularDiffusivity"
                 statisticalPerDSegmentationParams["mapResolution"] = templateDTIResolution
                 statisticalPerDSegmentationParams["statMethod"] = "T-Score"
                 statisticalPerDSegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-                statisticalPerDSegmentationParams["outputLabelVolume"] = outputPerDLesionLabelNode.GetID()
+                statisticalPerDSegmentationParams["outputLabel"] = outputPerDLesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalPerDSegmentationParams,
                                wait_for_completion=True)
@@ -1252,7 +1106,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 inputLSDPVRinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
                 slicer.mrmlScene.AddNode(inputLSDPVRinICBMVolume)
                 antsParams = {}
-                antsParams["inputVolume"] = inputMDVolume_reg.GetID()
+                antsParams["inputVolume"] = inputVRVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPVRinICBMVolume.GetID()
                 antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
                 antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
@@ -1280,13 +1134,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
                 statisticalVRSegmentationParams = {}
                 statisticalVRSegmentationParams["inputVolume"] = inputLSDPVRinICBMVolume.GetID()
-                if inputLabelMapVolume != None:
-                    statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
                 statisticalVRSegmentationParams["mapType"] = "VolumeRatio"
                 statisticalVRSegmentationParams["mapResolution"] = templateDTIResolution
                 statisticalVRSegmentationParams["statMethod"] = "T-Score"
                 statisticalVRSegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-                statisticalVRSegmentationParams["outputLabelVolume"] = outputVRLesionLabelNode.GetID()
+                statisticalVRSegmentationParams["outputLabel"] = outputVRLesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalVRSegmentationParams,
                                wait_for_completion=True)
@@ -1326,244 +1178,16 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
 
                         slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters,
                                        wait_for_completion=True)
-
-            # # Registering back to native space
-            # # Affine
-            # antsParams = {}
-            # antsParams["inputVolume"] = outputLabelVolume.GetID()
-            # antsParams["outputVolume"] = outputLabelVolume.GetID()
-            # antsParams["referenceVolume"] = inputFAVolume_reg.GetID()
-            # antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
-            # # antsParams["deffield"]=
-            # # antsParams["typeOfField"]="displacement"
-            # antsParams["interpolationType"] = interpolationMethod.currentText
-            # antsParams["inverseITKTransformation"] = False
-            #
-            # slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
-            #
-            # # SyN
-            # antsParams = {}
-            # antsParams["inputVolume"] = outputLabelVolume.GetID()
-            # antsParams["outputVolume"] = outputLabelVolume.GetID()
-            # antsParams["referenceVolume"] = inputFAVolume_reg.GetID()
-            # # antsParams["transformationFile"] =
-            # antsParams["deffield"] = slicer.util.getNode('regTemplate1Warp')
-            # antsParams["typeOfField"] = "displacement"
-            # antsParams["interpolationType"] = interpolationMethod.currentText
-            # antsParams["inverseITKTransformation"] = False
-            #
-            # slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
-
-
-
-            # else:
-            #     # Demon Diffeomorphic Registration: native to ICBM space
-            #     regLSDPNativeToICBMTransform = slicer.vtkMRMLGridTransformNode()
-            #     slicer.mrmlScene.AddNode(regLSDPNativeToICBMTransform)
-            #     inputLSDPFAinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
-            #     slicer.mrmlScene.AddNode(inputLSDPFAinICBMVolume)
-            #     regParams = {}
-            #     regParams["fixedVolume"] = slicer.util.getNode(DTITemplateNodeName)
-            #     regParams["movingVolume"] = inputFAVolume_reg.GetID()
-            #     regParams["samplingPercentage"] = 0.002
-            #     regParams["outputVolume"] = inputLSDPFAinICBMVolume.GetID()
-            #     regParams["outputDisplacementFieldVolume"] = regLSDPNativeToICBMTransform.GetID()
-            #     regParams["interpolationMode"] = interpolationMethod.currentText
-            #     regParams["numberOfPyramidLevels"] = 2
-            #     regParams["minimumFixedPyramid"] = [4, 4, 4]
-            #     regParams["minimumMovingPyramid"] = [4, 4, 4]
-            #     regParams["arrayOfPyramidLevelIterations"] = [70, 70]
-            #
-            #     slicer.cli.run(slicer.modules.brainsdemonwarp, None, regParams, wait_for_completion=True)
-            #
-            #     #
-            #     # Perform the statistical segmentation - FA map
-            #     #
-            #     # outputFALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            #     # slicer.mrmlScene.AddNode(outputFALesionLabelNode)
-            #     statisticalFASegmentationParams = {}
-            #     statisticalFASegmentationParams["inputVolume"] = inputLSDPFAinICBMVolume.GetID()
-            #     if inputLabelMapVolume != None:
-            #          statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
-            #     statisticalFASegmentationParams["mapType"] = "FracionalAnisotropy"
-            #     statisticalFASegmentationParams["mapResolution"] = templateDTIResolution
-            #     statisticalFASegmentationParams["statMethod"] = "T-Score"
-            #     statisticalFASegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-            #     statisticalFASegmentationParams["outputLabel"] = outputLabelVolume.GetID()
-            #
-            #     slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalFASegmentationParams, wait_for_completion=True)
-            #
-            #     if inputMDVolume != None:
-            #         # Resample to ICBM space
-            #         inputLSDPMDinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
-            #         slicer.mrmlScene.AddNode(inputLSDPMDinICBMVolume)
-            #         resampBackToNativeParams = {}
-            #         resampBackToNativeParams["inputVolume"] = inputMDVolume_reg.GetID()
-            #         resampBackToNativeParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-            #         resampBackToNativeParams["outputVolume"] = inputLSDPMDinICBMVolume.GetID()
-            #         resampBackToNativeParams["warpTransform"] = regLSDPNativeToICBMTransform.GetID()
-            #         resampBackToNativeParams["interpolationMode"] = interpolationMethod.currentText
-            #
-            #         slicer.cli.run(slicer.modules.brainsresample, None, resampBackToNativeParams, wait_for_completion=True)
-            #
-            #         #
-            #         # Perform the statistical segmentation - MD map
-            #         #
-            #         outputMDLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            #         slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
-            #         statisticalMDSegmentationParams = {}
-            #         statisticalMDSegmentationParams["inputVolume"] = inputLSDPMDinICBMVolume.GetID()
-            #         if inputLabelMapVolume != None:
-            #             statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
-            #         statisticalMDSegmentationParams["mapType"] = "MeanDiffusivity"
-            #         statisticalMDSegmentationParams["mapResolution"] = templateDTIResolution
-            #         statisticalMDSegmentationParams["statMethod"] = "T-Score"
-            #         statisticalMDSegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-            #         statisticalMDSegmentationParams["outputLabelVolume"] = outputMDLesionLabelNode.GetID()
-            #
-            #         slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalMDSegmentationParams, wait_for_completion=True)
-            #
-            #     if inputRAVolume != None:
-            #         # Resample to ICBM space
-            #         inputLSDPRAinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
-            #         slicer.mrmlScene.AddNode(inputLSDPRAinICBMVolume)
-            #         resampBackToNativeParams = {}
-            #         resampBackToNativeParams["inputVolume"] = inputRAVolume_reg.GetID()
-            #         resampBackToNativeParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-            #         resampBackToNativeParams["outputVolume"] = inputLSDPRAinICBMVolume.GetID()
-            #         resampBackToNativeParams["warpTransform"] = regLSDPNativeToICBMTransform.GetID()
-            #         resampBackToNativeParams["interpolationMode"] = interpolationMethod.currentText
-            #
-            #         slicer.cli.run(slicer.modules.brainsresample, None, resampBackToNativeParams, wait_for_completion=True)
-            #
-            #         #
-            #         # Perform the statistical segmentation - RA map
-            #         #
-            #         outputRALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            #         slicer.mrmlScene.AddNode(outputRALesionLabelNode)
-            #         statisticalRASegmentationParams = {}
-            #         statisticalRASegmentationParams["inputVolume"] = inputLSDPRAinICBMVolume.GetID()
-            #         if inputLabelMapVolume != None:
-            #             statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
-            #         statisticalRASegmentationParams["mapType"] = "RelativeAnisotropy"
-            #         statisticalRASegmentationParams["mapResolution"] = templateDTIResolution
-            #         statisticalRASegmentationParams["statMethod"] = "T-Score"
-            #         statisticalRASegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-            #         statisticalRASegmentationParams["outputLabelVolume"] = outputRALesionLabelNode.GetID()
-            #
-            #         slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalRASegmentationParams, wait_for_completion=True)
-            #
-            #     if inputPerDVolume != None:
-            #         # Resample to ICBM space
-            #         inputLSDPPerDinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
-            #         slicer.mrmlScene.AddNode(inputLSDPPerDinICBMVolume)
-            #         resampBackToNativeParams = {}
-            #         resampBackToNativeParams["inputVolume"] = inputRAVolume_reg.GetID()
-            #         resampBackToNativeParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-            #         resampBackToNativeParams["outputVolume"] = inputLSDPPerDinICBMVolume.GetID()
-            #         resampBackToNativeParams["warpTransform"] = regLSDPNativeToICBMTransform.GetID()
-            #         resampBackToNativeParams["interpolationMode"] = interpolationMethod.currentText
-            #
-            #         slicer.cli.run(slicer.modules.brainsresample, None, resampBackToNativeParams, wait_for_completion=True)
-            #
-            #         #
-            #         # Perform the statistical segmentation - Perpendicular Diffusivity map
-            #         #
-            #         outputPerDLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            #         slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
-            #         statisticalPerDSegmentationParams = {}
-            #         statisticalPerDSegmentationParams["inputVolume"] = inputLSDPPerDinICBMVolume.GetID()
-            #         if inputLabelMapVolume != None:
-            #             statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
-            #         statisticalPerDSegmentationParams["mapType"] = "PerpendicularDiffusivity"
-            #         statisticalPerDSegmentationParams["mapResolution"] = templateDTIResolution
-            #         statisticalPerDSegmentationParams["statMethod"] = "T-Score"
-            #         statisticalPerDSegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-            #         statisticalPerDSegmentationParams["outputLabelVolume"] = outputPerDLesionLabelNode.GetID()
-            #
-            #         slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalPerDSegmentationParams, wait_for_completion=True)
-            #
-            #     if inputVRVolume != None:
-            #         # Resample to ICBM space
-            #         inputLSDPVRinICBMVolume = slicer.vtkMRMLScalarVolumeNode()
-            #         slicer.mrmlScene.AddNode(inputLSDPVRinICBMVolume)
-            #         resampBackToNativeParams = {}
-            #         resampBackToNativeParams["inputVolume"] = inputRAVolume_reg.GetID()
-            #         resampBackToNativeParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-            #         resampBackToNativeParams["outputVolume"] = inputLSDPVRinICBMVolume.GetID()
-            #         resampBackToNativeParams["warpTransform"] = regLSDPNativeToICBMTransform.GetID()
-            #         resampBackToNativeParams["interpolationMode"] = interpolationMethod.currentText
-            #
-            #         slicer.cli.run(slicer.modules.brainsresample, None, resampBackToNativeParams, wait_for_completion=True)
-            #
-            #         #
-            #         # Perform the statistical segmentation - VR map
-            #         #
-            #         outputVRLesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            #         slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
-            #         statisticalVRSegmentationParams = {}
-            #         statisticalVRSegmentationParams["inputVolume"] = inputLSDPVRinICBMVolume.GetID()
-            #         if inputLabelMapVolume != None:
-            #             statisticalFASegmentationParams["inputLabel"] = inputLabelMapVolume.GetID()
-            #         statisticalVRSegmentationParams["mapType"] = "VolumeRatio"
-            #         statisticalVRSegmentationParams["mapResolution"] = templateDTIResolution
-            #         statisticalVRSegmentationParams["statMethod"] = "T-Score"
-            #         statisticalVRSegmentationParams["tThreshold"] = lsdpTScoreThreshold.value
-            #         statisticalVRSegmentationParams["outputLabelVolume"] = outputVRLesionLabelNode.GetID()
-            #
-            #         slicer.cli.run(slicer.modules.lsdpbrainsegmentation, None, statisticalVRSegmentationParams, wait_for_completion=True)
-            #
-            #
-            #     if mapsCount > 1:
-            #         finalLesioLabelParameters = {}
-            #
-            #         if inputMDVolume != None:
-            #             finalLesioLabelParameters["inputVolume1"]= outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["inputVolume2"]= outputMDLesionLabelNode.GetID()
-            #             finalLesioLabelParameters["outputVolume"]= outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["order"]=0
-            #
-            #             slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
-            #         if inputRAVolume != None:
-            #             finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["inputVolume2"] = outputRALesionLabelNode.GetID()
-            #             finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["order"] = 0
-            #
-            #             slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
-            #         if inputPerDVolume != None:
-            #             finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["inputVolume2"] = outputPerDLesionLabelNode.GetID()
-            #             finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["order"] = 0
-            #
-            #             slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
-            #         if inputVRVolume != None:
-            #             finalLesioLabelParameters["inputVolume1"] = outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["inputVolume2"] = outputVRLesionLabelNode.GetID()
-            #             finalLesioLabelParameters["outputVolume"] = outputLabelVolume.GetID()
-            #             finalLesioLabelParameters["order"] = 0
-            #
-            #             slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
-            #
-            #     # Registering back to native space
-            #     resampBackToNativeParams = {}
-            #     resampBackToNativeParams["inputVolume"] = outputLabelVolume.GetID()
-            #     resampBackToNativeParams["referenceVolume"] = inputT1Volume.GetID()
-            #     resampBackToNativeParams["outputVolume"] = outputLabelVolume.GetID()
-            #     resampBackToNativeParams["warpTransform"] = registrationTemplateTransform.GetID()
-            #     resampBackToNativeParams["interpolationMode"] = interpolationMethod.currentText
-            #
-            #     # slicer.cli.run(slicer.modules.brainsresample, None, resampBackToNativeParams, wait_for_completion=True)
         elif segmentationApproach == 'SpatialClustering':
-            slicer.util.showStatusMessage("Step 3/4: Performing Spatial Clustering segmentation on all data...")
+            slicer.util.showStatusMessage("Step 3/5: Performing Spatial Clustering segmentation on all data...")
 
             clusterParams = {}
             clusterParams["inputVolume"] = slicer.util.getNode('regTemplateInverseWarped')
             clusterParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
             clusterParams["outputVolume"] = outputLabelVolume.GetID()
             clusterParams["dtiMap"] = "FractionalAnisotropy"
-            clusterParams["clusterMethod"] = clusteringApproach
+            clusterParams["mapResolution"] = templateDTIResolution
+            clusterParams["thrMethod"] = thresholdMethod
             clusterParams["numClass"] = clusterNumberOfClasses.value
 
             slicer.cli.run(slicer.modules.clusteringscalardiffusionsegmentation, None, clusterParams, wait_for_completion=True)
@@ -1601,11 +1225,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 clusterParams["referenceVolume"] = slicer.util.getNode(MDTemplateNodeName)
                 clusterParams["outputVolume"] = outputMDLesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "MeanDiffusivity"
-                clusterParams["clusterMethod"] = clusteringApproach
+                clusterParams["mapResolution"] = templateDTIResolution
+                clusterParams["thrMethod"] = thresholdMethod
                 clusterParams["numClass"] = clusterNumberOfClasses.value
 
                 slicer.cli.run(slicer.modules.clusteringscalardiffusionsegmentation, None, clusterParams, wait_for_completion=True)
-
             if inputRAVolume != None:
                 # SyN
                 inputRAICBMVolume = slicer.vtkMRMLScalarVolumeNode()
@@ -1636,16 +1260,15 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputRALesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputRAICBMVolume.GetID()
-                clusterParams[
-                    "referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
+                clusterParams["referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
                 clusterParams["outputVolume"] = outputRALesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "RelativeAnisotropy"
-                clusterParams["clusterMethod"] = clusteringApproach
+                clusterParams["mapResolution"] = templateDTIResolution
+                clusterParams["thrMethod"] = thresholdMethod
                 clusterParams["numClass"] = clusterNumberOfClasses.value
 
                 slicer.cli.run(slicer.modules.clusteringscalardiffusionsegmentation, None, clusterParams,
                                wait_for_completion=True)
-
             if inputPerDVolume != None:
                 # SyN
                 inputPerDICBMVolume = slicer.vtkMRMLScalarVolumeNode()
@@ -1676,16 +1299,15 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputPerDICBMVolume.GetID()
-                clusterParams[
-                    "referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
+                clusterParams["referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
                 clusterParams["outputVolume"] = outputPerDLesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "PerpendicularDiffusivity"
-                clusterParams["clusterMethod"] = clusteringApproach
+                clusterParams["mapResolution"] = templateDTIResolution
+                clusterParams["thrMethod"] = thresholdMethod
                 clusterParams["numClass"] = clusterNumberOfClasses.value
 
                 slicer.cli.run(slicer.modules.clusteringscalardiffusionsegmentation, None, clusterParams,
                                wait_for_completion=True)
-
             if inputVRVolume != None:
                 # SyN
                 inputVRICBMVolume = slicer.vtkMRMLScalarVolumeNode()
@@ -1716,11 +1338,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputVRICBMVolume.GetID()
-                clusterParams[
-                    "referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
+                clusterParams["referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
                 clusterParams["outputVolume"] = outputVRLesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "VolumeRatio"
-                clusterParams["clusterMethod"] = clusteringApproach
+                clusterParams["mapResolution"] = templateDTIResolution
+                clusterParams["thrMethod"] = thresholdMethod
                 clusterParams["numClass"] = clusterNumberOfClasses.value
 
                 slicer.cli.run(slicer.modules.clusteringscalardiffusionsegmentation, None, clusterParams,
@@ -1762,17 +1384,17 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                     slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters,
                                    wait_for_completion=True)
         elif segmentationApproach == 'Bayesian':
-            slicer.util.showStatusMessage("Step 3/4: Performing Bayesian segmentation on all data...")
+            slicer.util.showStatusMessage("Step 3/5: Performing Bayesian segmentation on all data...")
             #
             #Perform Bayesian segmentation in FA map
             #
-            # outputFALesionLabelNode = slicer.vtkMRMLLabelMapVolumeNode()
-            # slicer.mrmlScene.AddNode(outputFALesionLabelNode)
             bayesParams = {}
             bayesParams["inputVolume"] = slicer.util.getNode('regTemplateInverseWarped')
+            bayesParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
             bayesParams["mapType"] = "FractionalAnisotropy"
-            bayesParams["priorsImage"] = "Multiple Sclerosis DTI Lesions"
+            bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
             bayesParams["mapResolution"] = templateDTIResolution
+            bayesParams["thrMethod"] = thresholdMethod
             bayesParams["outputLabel"] = outputLabelVolume.GetID()
 
             slicer.cli.run(slicer.modules.bayesiandtisegmentation, None, bayesParams, wait_for_completion=True)
@@ -1810,9 +1432,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesMDinICBMVolume.GetID()
-                bayesParams["mapType"] = "FractionalAnisotropy"
-                bayesParams["priorsImage"] = "Multiple Sclerosis DTI Lesions"
+                bayesParams["referenceVolume"] = slicer.util.getNode(MDTemplateNodeName)
+                bayesParams["mapType"] = "MeanDiffusivity"
+                bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
+                bayesParams["thrMethod"] = thresholdMethod
                 bayesParams["outputLabel"] = outputMDLesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.bayesiandtisegmentation, None, bayesParams, wait_for_completion=True)
@@ -1849,9 +1473,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputRALesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesRAinICBMVolume.GetID()
-                bayesParams["mapType"] = "FractionalAnisotropy"
-                bayesParams["priorsImage"] = "Multiple Sclerosis DTI Lesions"
+                bayesParams["referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
+                bayesParams["mapType"] = "RelativeAnisotropy"
+                bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
+                bayesParams["thrMethod"] = thresholdMethod
                 bayesParams["outputLabel"] = outputRALesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.bayesiandtisegmentation, None, bayesParams, wait_for_completion=True)
@@ -1888,9 +1514,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesPerDinICBMVolume.GetID()
-                bayesParams["mapType"] = "FractionalAnisotropy"
-                bayesParams["priorsImage"] = "Multiple Sclerosis DTI Lesions"
+                bayesParams["referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
+                bayesParams["mapType"] = "PerpendicularDiffusivity"
+                bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
+                bayesParams["thrMethod"] = thresholdMethod
                 bayesParams["outputLabel"] = outputPerDLesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.bayesiandtisegmentation, None, bayesParams, wait_for_completion=True)
@@ -1927,9 +1555,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesVRinICBMVolume.GetID()
-                bayesParams["mapType"] = "FractionalAnisotropy"
-                bayesParams["priorsImage"] = "Multiple Sclerosis DTI Lesions"
+                bayesParams["referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
+                bayesParams["mapType"] = "VolumeRatio"
+                bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
+                bayesParams["thrMethod"] = thresholdMethod
                 bayesParams["outputLabel"] = outputVRLesionLabelNode.GetID()
 
                 slicer.cli.run(slicer.modules.bayesiandtisegmentation, None, bayesParams, wait_for_completion=True)
@@ -1966,92 +1596,104 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
 
                     slicer.cli.run(slicer.modules.addscalarvolumes, None, finalLesioLabelParameters, wait_for_completion=True)
 
-            #TODO TEM QUE FAZER O PROCESSAMENTO JA NO ESPACO NATIVO...COREGISTRAR DEPOIS ACABA DESTORCENDO TODO O MAPA...FAZER COMO NO CLUSTERING
+        #
+        # Label Shape Constraints
+        #
+        labelShapeParams = {}
+        labelShapeParams["inputVolume"] = outputLabelVolume.GetID()
+        labelShapeParams["outputVolume"] = outputLabelVolume.GetID()
+        labelShapeParams["labelToSmooth"] = mapsCount
+        labelShapeParams["numberOfIterations"] = 50
+        labelShapeParams["maxRMSError"] = 0.01
+        labelShapeParams["gaussianSigma"] = 0.5
 
+        slicer.cli.run(slicer.modules.labelmapsmoothing, None, labelShapeParams, wait_for_completion=True)
 
         #################################################################################################################
-        #                               Remove the gray matter from the input normalized data                           #
+        #                                  Apply the T1 and FLAIR segmentation approach                                 #
         #################################################################################################################
+        slicer.util.showStatusMessage("Step 4/5: T1 and T2-FLAIR lesion segmentation...")
         #
-        # Prepare the white matter mask from MNI152-T1
+        # White Matter evaluation in T1 and FLAIR images - outlier detection
         #
-        slicer.util.showStatusMessage("Step 4/4: Masking white matter in the lesion label volume ")
-        #Registering MNI T1 template in native space
-        #Apply ANTs transform
-        # SyN
-        ICBMPatientShapeVolume = slicer.vtkMRMLScalarVolumeNode()
-        slicer.mrmlScene.AddNode(ICBMPatientShapeVolume)
-        antsParams = {}
-        antsParams["inputVolume"] = slicer.util.getNode(T1TemplateBrain)
-        antsParams["outputVolume"] = ICBMPatientShapeVolume.GetID()
-        antsParams["referenceVolume"] = slicer.util.getNode(T1TemplateBrain)
-        antsParams["transformationFile"] = slicer.util.getNode('regTemplate1Warp')
-        antsParams["typeOfField"] = "displacement"
-        antsParams["interpolationType"] = "linear"
-        antsParams["inverseITKTransformation"] = False
+        if applyQuickANTS.isChecked:
+            # Saving files into tmp folder
+            # Patient T1
+            slicer.util.saveNode(inputT1Volume, folderSelector.directory + '/patient-T1.nii.gz')
+            # Patient FLAIR
+            slicer.util.saveNode(inputFLAIRVolume_reg, folderSelector.directory + '/patient-FLAIR.nii.gz')
+            # MNI Template
+            slicer.util.saveNode(slicer.util.getNode(T1TemplateBrain),folderSelector.directory + '/MNI-Template-T1.nii.gz')
 
-        slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
+            # Use ANTs registration
+            os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
+            os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyNQuick.sh")
+            # os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory + " Y" + " Y")
+        else:
+            # Saving files into tmp folder
+            # Patient T1
+            slicer.util.saveNode(inputT1Volume, folderSelector.directory + '/patient-T1.nii.gz')
+            # Patient FLAIR
+            slicer.util.saveNode(inputFLAIRVolume_reg, folderSelector.directory + '/patient-FLAIR.nii.gz')
+            # MNI Template
+            slicer.util.saveNode(slicer.util.getNode(T1TemplateBrain),folderSelector.directory + '/MNI-Template-T1.nii.gz')
 
-        #
-        # Creating White Matter Mask
-        #
-        whiteMatterMask = slicer.vtkMRMLLabelMapVolumeNode()
-        slicer.mrmlScene.AddNode(whiteMatterMask)
-        wmMaskParams = {}
-        wmMaskParams["inputVolume"] = ICBMPatientShapeVolume.GetID()
-        wmMaskParams["outputLabel"] = whiteMatterMask.GetID()
-        wmMaskParams["oneTissue"] = False
-        wmMaskParams["segMethod"] = "KMeans"
-        wmMaskParams["numClass"] = 4
+            # Use ANTs registration
+            os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
+            os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyNQuick.sh")
+            os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory + " N" + " Y")
 
-        slicer.cli.run(slicer.modules.braintissuesmask, None, wmMaskParams, wait_for_completion=True)
-
-
-        #
-        # Remove non-White Matter Tissue from the Label output
-        #
-        # labelOnlyWM = slicer.vtkMRMLLabelMapVolumeNode()
-        # slicer.mrmlScene.AddNode(labelOnlyWM)
-        applyWMMaskParams = {}
-        applyWMMaskParams["InputVolume"] = outputLabelVolume.GetID()
-        applyWMMaskParams["MaskVolume"] = whiteMatterMask.GetID()
-        applyWMMaskParams["Label"] = 3
-        applyWMMaskParams["OutputVolume"] = outputLabelVolume.GetID()
-
-        slicer.cli.run(slicer.modules.maskscalarvolume, None, applyWMMaskParams, wait_for_completion=True)
+        # Apply Structural Brain Segmentation
+        os.system("chmod u+x " + home + "/MSLesionTrack-Data/structuralLesionSegmentation.sh")
+        os.system("gunzip "+ folderSelector.directory +"/regStructInverseWarped.nii.gz")
+        # os.system(home +"/MSLesionTrack-Data/structuralLesionSegmentation.sh "+folderSelector.directory+"/regStructInverseWarped.nii")
 
         #
-        # Morphological Shape Constraints
+        # Merge DTI and T1/FLAIR Labels
         #
-        #TODO ADICIONAR MODULE CLI PARA FAZER A FILTRAGEM POR FORMA NO LABEL FINAL
+        slicer.util.showStatusMessage("Step 5/5: Merging DTI/T1/T2-FLAIR lesion map...")
+        # Load structural label
+        slicer.util.loadVolume(folderSelector.directory + '/struct-lesion-label.nii.gz')  # T1 and T2-FLAIR Lesion Label in ICBM Space
+
+        mergeLabels= {}
+        mergeLabels["inputVolume1"] = outputLabelVolume.GetID()
+        mergeLabels["inputVolume2"] = slicer.util.getNode("struct-lesion-label")
+        mergeLabels["outputVolume"] = outputLabelVolume.GetID()
+        mergeLabels["order"] = 0
+
+        slicer.cli.run(slicer.modules.addscalarvolumes, None, mergeLabels, wait_for_completion=True)
 
         #
         #  Registering back to native space
         #
+        if not outputICBMSpace.isChecked():
+            slicer.util.showStatusMessage("Opt: Transforming label map to native space...")
+            # Read registered images and tranforms
+            slicer.util.loadTransform(folderSelector.directory + '/regStruct1Warp.nii.gz')  # T1/FLAIR to native space
+            slicer.util.loadTransform(folderSelector.directory + '/regStruct0GenericAffine.mat')  # T1/FLAIR to native space
 
-        # # Affine
-        # antsParams = {}
-        # antsParams["inputVolume"] = outputLabelVolume.GetID()
-        # antsParams["outputVolume"] = outputLabelVolume.GetID()
-        # antsParams["referenceVolume"] = inputFAVolume_reg.GetID()
-        # antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
-        # antsParams["interpolationType"] = "linear"
-        # antsParams["inverseITKTransformation"] = False
-        #
-        # slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
-        #
-        # # SyN
-        # antsParams = {}
-        # antsParams["inputVolume"] = outputLabelVolume.GetID()
-        # antsParams["outputVolume"] = outputLabelVolume.GetID()
-        # antsParams["referenceVolume"] = inputFAVolume_reg.GetID()
-        # antsParams["transformationFile"] = slicer.util.getNode('regTemplate1Warp')
-        # antsParams["typeOfField"] = "displacement"
-        # antsParams["interpolationType"] = "linear"
-        # antsParams["inverseITKTransformation"] = False
-        #
-        # slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
+            # Affine
+            antsParams = {}
+            antsParams["inputVolume"] = outputLabelVolume.GetID()
+            antsParams["outputVolume"] = outputLabelVolume.GetID()
+            antsParams["referenceVolume"] = inputT1Volume.GetID()
+            antsParams["transformationFile"] = slicer.util.getNode('regStruct0GenericAffine')
+            antsParams["interpolationType"] = "nn"
+            antsParams["inverseITKTransformation"] = False
 
+            slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
+
+            # SyN
+            antsParams = {}
+            antsParams["inputVolume"] = outputLabelVolume.GetID()
+            antsParams["outputVolume"] = outputLabelVolume.GetID()
+            antsParams["referenceVolume"] = inputT1Volume.GetID()
+            antsParams["transformationFile"] = slicer.util.getNode('regStruct1Warp')
+            antsParams["typeOfField"] = "displacement"
+            antsParams["interpolationType"] = "nn"
+            antsParams["inverseITKTransformation"] = False
+
+            slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
 
         slicer.util.showStatusMessage("DTILesionTrack - Processing completed!")
 
