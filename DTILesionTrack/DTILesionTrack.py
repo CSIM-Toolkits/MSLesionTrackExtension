@@ -517,13 +517,13 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         n4params = {}
         n4params["inputImageName"] = inputT1Volume.GetID()
         n4params["outputImageName"] = inputT1Volume.GetID()
-        # slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
+        slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
 
         slicer.util.showStatusMessage("Pre-processing: Bias field correction on T2-FLAIR...")
         n4params = {}
         n4params["inputImageName"] = inputFLAIRVolume.GetID()
         n4params["outputImageName"] = inputFLAIRVolume.GetID()
-        # slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
+        slicer.cli.run(slicer.modules.n4itkbiasfieldcorrection, None, n4params, wait_for_completion=True)
 
         #
         # T1 and FLAIR pre-processing: noise attenuation
@@ -837,16 +837,16 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
 
         slicer.util.showStatusMessage("Step 2/5: DTI template registration...")
         if applyQuickANTS.isChecked:
-            # #Saving files into tmp folder
-            # #Patient FA
-            # slicer.util.saveNode(inputFAVolume_reg, folderSelector.directory+'/patient-FA.nii.gz')
-            # # FA Template
-            # slicer.util.saveNode(slicer.util.getNode(DTITemplateNodeName), folderSelector.directory + '/DTI-Template-FA.nii.gz')
-            #
-            # # Use ANTs registration
-            # os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
-            # os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyNQuick.sh")
-            # os.system(home+"/MSLesionTrack-Data/diffeomorphicRegistration.sh "+folderSelector.directory+" Y"+ " N")
+            #Saving files into tmp folder
+            #Patient FA
+            slicer.util.saveNode(inputFAVolume_reg, folderSelector.directory+'/patient-FA.nii.gz')
+            # FA Template
+            slicer.util.saveNode(slicer.util.getNode(DTITemplateNodeName), folderSelector.directory + '/DTI-Template-FA.nii.gz')
+
+            # Use ANTs registration
+            os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
+            os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyNQuick.sh")
+            os.system(home+"/MSLesionTrack-Data/diffeomorphicRegistration.sh "+folderSelector.directory+" Y"+ " N")
 
             #Read registered images and tranforms
             slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz')# DTI Template to native space
@@ -1628,7 +1628,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             # Use ANTs registration
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/antsRegistrationSyNQuick.sh")
-            # os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory + " Y" + " Y")
+            os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory + " Y" + " Y")
         else:
             # Saving files into tmp folder
             # Patient T1
@@ -1646,7 +1646,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         # Apply Structural Brain Segmentation
         os.system("chmod u+x " + home + "/MSLesionTrack-Data/structuralLesionSegmentation.sh")
         os.system("gunzip "+ folderSelector.directory +"/regStructInverseWarped.nii.gz")
-        # os.system(home +"/MSLesionTrack-Data/structuralLesionSegmentation.sh "+folderSelector.directory+"/regStructInverseWarped.nii")
+        os.system(home +"/MSLesionTrack-Data/structuralLesionSegmentation.sh "+folderSelector.directory+"/regStructInverseWarped.nii")
 
         #
         # Merge DTI and T1/FLAIR Labels
