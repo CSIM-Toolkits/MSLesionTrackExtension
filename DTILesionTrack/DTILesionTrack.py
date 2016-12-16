@@ -11,7 +11,7 @@ from numpy.f2py.auxfuncs import throw_error
 from slicer.ScriptedLoadableModule import *
 import logging
 
-
+#TODO Foram editadas as chamadas do slicer.loadVolumes, mas ainda nao foi testado este script (16/12/2016)
 #
 # DTILesionTrack
 #
@@ -499,7 +499,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             betParams["inputVolume"] = inputT1Volume.GetID()
             betParams["outputVolume"] = inputT1Volume.GetID()
 
-            slicer.cli.run(slicer.modules.brainextractiontool, None, betParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.robexbrainextraction, None, betParams, wait_for_completion=True)
 
             #
             # FLAIR brain extraction
@@ -508,7 +508,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             betParams["inputVolume"] = inputFLAIRVolume.GetID()
             betParams["outputVolume"] = inputFLAIRVolume.GetID()
 
-            slicer.cli.run(slicer.modules.brainextractiontool, None, betParams, wait_for_completion=True)
+            slicer.cli.run(slicer.modules.robexbrainextraction, None, betParams, wait_for_completion=True)
 
         #
         # T1 and FLAIR pre-processing: bias field correction
@@ -556,233 +556,177 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         #Read FA Template
         if platform.system() is "Windows":
             if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-FA-1mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz')
-                DTITemplateNodeName = "JHU-ICBM-FA-1mm"
-                T1TemplateBrain = "MNI152_T1_1mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-FA-1mm.nii.gz',{},True)
+                (read,T1TemplateBrain)=slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-FA-2mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz')
-                DTITemplateNodeName = "JHU-ICBM-FA-2mm"
-                T1TemplateBrain = "MNI152_T1_2mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\DTI-Templates\\JHU-ICBM-FA-2mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-1mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-20-FA-1mm"
-                T1TemplateBrain = "MNI152_T1_1mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-1mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-2mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-20-2mm"
-                T1TemplateBrain = "MNI152_T1_2mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-20-2mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                slicer.util.loadVolume(
-                home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-1mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-131-1mm"
-                T1TemplateBrain = "MNI152_T1_1mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-1mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_1mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                slicer.util.loadVolume(
-                home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-2mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-131-2mm"
-                T1TemplateBrain = "MNI152_T1_2mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-FA-131-2mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '\\MSLesionTrack-Data\\Structural-Templates\\MNI152_T1_2mm_brain.nii.gz',{},True)
         else:
             if (templateDTIResolution == '1mm') & (templateDTI == 'JHU-81'):
-                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-1mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz')
-                DTITemplateNodeName = "JHU-ICBM-FA-1mm"
-                T1TemplateBrain = "MNI152_T1_1mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-1mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '2mm') & (templateDTI == 'JHU-81'):
-                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-2mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz')
-                DTITemplateNodeName = 'JHU-ICBM-FA-2mm'
-                T1TemplateBrain = "MNI152_T1_2mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/JHU-ICBM-FA-2mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-1mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-1mm"
-                T1TemplateBrain = "MNI152_T1_1mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-1mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-20-2mm"
-                T1TemplateBrain = "MNI152_T1_2mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-20-2mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-131-1mm"
-                T1TemplateBrain = "MNI152_T1_1mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-1mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_1mm_brain.nii.gz',{},True)
             elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                slicer.util.loadVolume(
-                home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz')
-                slicer.util.loadVolume(
-                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz')
-                DTITemplateNodeName = "USP-ICBM-FA-131-2mm"
-                T1TemplateBrain = "MNI152_T1_2mm_brain"
+                (read, DTITemplateNode) =slicer.util.loadVolume(
+                home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-FA-131-2mm.nii.gz',{},True)
+                (read, T1TemplateBrain) =slicer.util.loadVolume(
+                    home + '/MSLesionTrack-Data/Structural-Templates/MNI152_T1_2mm_brain.nii.gz',{},True)
 
         if inputMDVolume != None:
             #Read MD Template
             if platform.system() is "Windows":
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-1mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-20-MD-1mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-2mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-20-2mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-1mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-131-1mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-2mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-131-2mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-MD-131-2mm.nii.gz',{},True)
             else:
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-1mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-1mm"
+                    (read, MDTemplateNodeName) = slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-2mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-20-2mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-1mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-131-1mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-2mm.nii.gz')
-                    MDTemplateNodeName = "USP-ICBM-MD-131-2mm"
+                    (read, MDTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-MD-131-2mm.nii.gz',{},True)
 
         if inputRAVolume != None:
             # Read RA Template
             if platform.system() is "Windows":
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-1mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-20-RA-1mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-2mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-20-2mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-1mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-131-1mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-2mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-131-2mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-RA-131-2mm.nii.gz',{},True)
             else:
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-1mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-1mm"
+                    (read, RATemplateNodeName) =DTITemplate = slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-2mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-20-2mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-131-1mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-131-1mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-131-2mm.nii.gz')
-                    RATemplateNodeName = "USP-ICBM-RA-131-2mm"
+                    (read, RATemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-RA-131-2mm.nii.gz',{},True)
 
         if inputPerDVolume != None:
             # Read Perp Diff Template
             if platform.system() is "Windows":
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-1mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-20-PerpDiff-1mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-2mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-20-2mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-1mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-131-1mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-2mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-131-2mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-PerpDiff-131-2mm.nii.gz',{},True)
             else:
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-1mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-1mm"
+                    (read, PerpDiffTemplateNodeName) =DTITemplate = slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-2mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-20-2mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-131-1mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-131-1mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-131-2mm.nii.gz')
-                    PerpDiffTemplateNodeName = "USP-ICBM-PerpDiff-131-2mm"
+                    (read, PerpDiffTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-PerpDiff-131-2mm.nii.gz',{},True)
 
         if inputVRVolume != None:
             # Read VR Template
             if platform.system() is "Windows":
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-1mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-20-VR-1mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-2mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-20-2mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-1mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-131-1mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-2mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-131-2mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '\\MSLesionTrack-Data\\DTI-Templates\\USP-ICBM-VR-131-2mm.nii.gz',{},True)
             else:
                 if (templateDTIResolution == '1mm') & (templateDTI == 'USP-20'):
-                    DTITemplate = slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-1mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-1mm"
+                    (read, VRTemplateNodeName) =DTITemplate = slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-20'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-2mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-20-2mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-20-2mm.nii.gz',{},True)
                 elif (templateDTIResolution == '1mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-1mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-131-1mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-1mm.nii.gz',{},True)
                 elif (templateDTIResolution == '2mm') & (templateDTI == 'USP-131'):
-                    slicer.util.loadVolume(
-                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-2mm.nii.gz')
-                    VRTemplateNodeName = "USP-ICBM-VR-131-2mm"
+                    (read, VRTemplateNodeName) =slicer.util.loadVolume(
+                        home + '/MSLesionTrack-Data/DTI-Templates/USP-ICBM-VR-131-2mm.nii.gz',{},True)
 
         slicer.util.showStatusMessage("Step 2/5: Registering input volumes...")
 
@@ -804,7 +748,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         regParams["initializeTransformMode"] = "useMomentsAlign"
         regParams["useRigid"] = True
         regParams["interpolationMode"] = interpolationMethod.currentText
-        regParams["numberOfSamples"] = 200000
+        # regParams["numberOfSamples"] = 200000
 
         slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
 
@@ -825,9 +769,9 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         regParams["outputVolume"] = inputFAVolume_reg.GetID()
         regParams["linearTransform"] = registrationDTI2T1Transform.GetID()
         regParams["initializeTransformMode"] = "useMomentsAlign"
-        regParams["useAffine"] = True
+        regParams["useRigid"] = True
         regParams["interpolationMode"] = interpolationMethod.currentText
-        regParams["numberOfSamples"] = 200000
+        # regParams["numberOfSamples"] = 200000
 
         slicer.cli.run(slicer.modules.brainsfit, None, regParams, wait_for_completion=True)
 
@@ -841,7 +785,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             #Patient FA
             slicer.util.saveNode(inputFAVolume_reg, folderSelector.directory+'/patient-FA.nii.gz')
             # FA Template
-            slicer.util.saveNode(slicer.util.getNode(DTITemplateNodeName), folderSelector.directory + '/DTI-Template-FA.nii.gz')
+            slicer.util.saveNode(DTITemplateNode, folderSelector.directory + '/DTI-Template-FA.nii.gz')
 
             # Use ANTs registration
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
@@ -849,17 +793,17 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             os.system(home+"/MSLesionTrack-Data/diffeomorphicRegistration.sh "+folderSelector.directory+" Y"+ " N")
 
             #Read registered images and tranforms
-            slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz')# DTI Template to native space
-            slicer.util.loadTransform(folderSelector.directory + '/regTemplate1InverseWarp.nii.gz')
-            slicer.util.loadTransform(folderSelector.directory + '/regTemplate0GenericAffine.mat')# DTI Template to native space
-            slicer.util.loadVolume(folderSelector.directory + '/regTemplateWarped.nii.gz')#DTI Template into patient space
-            slicer.util.loadVolume(folderSelector.directory + '/regTemplateInverseWarped.nii.gz')#Patient in ICBM space
+            (read,regTemplate1Warp)=slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz',True)# DTI Template to native space
+            (read, regTemplate1InverseWarp)=slicer.util.loadTransform(folderSelector.directory + '/regTemplate1InverseWarp.nii.gz',True)
+            (read, regTemplate0GenericAffine) =slicer.util.loadTransform(folderSelector.directory + '/regTemplate0GenericAffine.mat',True)# DTI Template to native space
+            (read, regTemplateWarped) =slicer.util.loadVolume(folderSelector.directory + '/regTemplateWarped.nii.gz',{},True)#DTI Template into patient space
+            (read, regTemplateInverseWarped) =slicer.util.loadVolume(folderSelector.directory + '/regTemplateInverseWarped.nii.gz',{},True)#Patient in ICBM space
         else:
             # Saving files into tmp folder
             # Patient FA
             slicer.util.saveNode(inputFAVolume, folderSelector.directory + '/patient-FA.nii.gz')
             # FA Template
-            slicer.util.saveNode(slicer.util.getNode(DTITemplateNodeName),folderSelector.directory + '/DTI-Template-FA.nii.gz')
+            slicer.util.saveNode(DTITemplateNode,folderSelector.directory + '/DTI-Template-FA.nii.gz')
 
             # Use ANTs registration
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
@@ -867,11 +811,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             os.system(home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh " + folderSelector.directory+" N"+ " N")
 
             # Read registered images and tranforms
-            slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz')  # DTI Template to native space
-            slicer.util.loadTransform(folderSelector.directory + '/regTemplate1InverseWarp.nii.gz')
-            slicer.util.loadTransform(folderSelector.directory + '/regTemplate0GenericAffine.mat')  # DTI Template to native space
-            slicer.util.loadVolume(folderSelector.directory + '/regTemplateWarped.nii.gz')  # DTI Template into patient space
-            slicer.util.loadVolume(folderSelector.directory + '/regTemplateInverseWarped.nii.gz')  # Patient in ICBM space
+            (read, regTemplate1Warp) = slicer.util.loadTransform(folderSelector.directory + '/regTemplate1Warp.nii.gz', True)  # DTI Template to native space
+            (read, regTemplate1InverseWarp) = slicer.util.loadTransform(folderSelector.directory + '/regTemplate1InverseWarp.nii.gz', True)
+            (read, regTemplate0GenericAffine) = slicer.util.loadTransform(folderSelector.directory + '/regTemplate0GenericAffine.mat', True)  # DTI Template to native space
+            (read, regTemplateWarped) = slicer.util.loadVolume(folderSelector.directory + '/regTemplateWarped.nii.gz',{}, True)  # DTI Template into patient space
+            (read, regTemplateInverseWarped) = slicer.util.loadVolume(folderSelector.directory + '/regTemplateInverseWarped.nii.gz', {}, True)  #Patient in ICBM space
 
         # TODO COREGISTRO COM MD, nao linear, PRECISA SER FEITO NOVAMENTE...so chamar o script ANTs
         #
@@ -967,7 +911,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             # Perform the statistical segmentation - FA map
             #
             statisticalFASegmentationParams = {}
-            statisticalFASegmentationParams["inputVolume"] = slicer.util.getNode('regTemplateInverseWarped')
+            statisticalFASegmentationParams["inputVolume"] = regTemplateInverseWarped.GetID()
             statisticalFASegmentationParams["mapType"] = "FractionalAnisotropy"
             statisticalFASegmentationParams["mapResolution"] = templateDTIResolution
             statisticalFASegmentationParams["statMethod"] = "T-Score"
@@ -983,8 +927,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputMDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPMDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -995,8 +939,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams={}
                 antsParams["inputVolume"]= inputLSDPMDinICBMVolume.GetID()
                 antsParams["outputVolume"]= inputLSDPMDinICBMVolume.GetID()
-                antsParams["referenceVolume"]= slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"]= slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"]= DTITemplateNode.GetID()
+                antsParams["transformationFile"]= regTemplate0GenericAffine
                 antsParams["interpolationType"]="linear"
                 antsParams["inverseITKTransformation"]=True
 
@@ -1024,8 +968,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputRAVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPRAinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1036,8 +980,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputLSDPRAinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputLSDPRAinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1066,8 +1010,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputPerDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPPerDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1078,8 +1022,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputLSDPPerDinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputLSDPPerDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1108,8 +1052,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputVRVolume_reg.GetID()
                 antsParams["outputVolume"] = inputLSDPVRinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = interpolationMethod.currentText
                 antsParams["inverseITKTransformation"] = False
@@ -1120,8 +1064,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputLSDPVRinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputLSDPVRinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1182,8 +1126,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             slicer.util.showStatusMessage("Step 3/5: Performing Spatial Clustering segmentation on all data...")
 
             clusterParams = {}
-            clusterParams["inputVolume"] = slicer.util.getNode('regTemplateInverseWarped')
-            clusterParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
+            clusterParams["inputVolume"] = regTemplateInverseWarped.GetID()
+            clusterParams["referenceVolume"] = DTITemplateNode.GetID()
             clusterParams["outputVolume"] = outputLabelVolume.GetID()
             clusterParams["dtiMap"] = "FractionalAnisotropy"
             clusterParams["mapResolution"] = templateDTIResolution
@@ -1199,8 +1143,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputMDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputMDICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1211,8 +1155,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputMDICBMVolume.GetID()
                 antsParams["outputVolume"] = inputMDICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1222,7 +1166,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputMDICBMVolume.GetID()
-                clusterParams["referenceVolume"] = slicer.util.getNode(MDTemplateNodeName)
+                clusterParams["referenceVolume"] = MDTemplateNodeName.GetID()
                 clusterParams["outputVolume"] = outputMDLesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "MeanDiffusivity"
                 clusterParams["mapResolution"] = templateDTIResolution
@@ -1237,8 +1181,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputRAVolume_reg.GetID()
                 antsParams["outputVolume"] = inputRAICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1249,8 +1193,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputRAICBMVolume.GetID()
                 antsParams["outputVolume"] = inputRAICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1260,7 +1204,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputRALesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputRAICBMVolume.GetID()
-                clusterParams["referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
+                clusterParams["referenceVolume"] = RATemplateNodeName.GetID()
                 clusterParams["outputVolume"] = outputRALesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "RelativeAnisotropy"
                 clusterParams["mapResolution"] = templateDTIResolution
@@ -1276,8 +1220,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputPerDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputPerDICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1288,8 +1232,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputPerDICBMVolume.GetID()
                 antsParams["outputVolume"] = inputPerDICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1299,7 +1243,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputPerDICBMVolume.GetID()
-                clusterParams["referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
+                clusterParams["referenceVolume"] = PerpDiffTemplateNodeName.GetID()
                 clusterParams["outputVolume"] = outputPerDLesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "PerpendicularDiffusivity"
                 clusterParams["mapResolution"] = templateDTIResolution
@@ -1315,8 +1259,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputVRVolume_reg.GetID()
                 antsParams["outputVolume"] = inputVRICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1327,8 +1271,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputVRICBMVolume.GetID()
                 antsParams["outputVolume"] = inputVRICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = DTITemplateNode.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1338,7 +1282,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
                 clusterParams = {}
                 clusterParams["inputVolume"] = inputVRICBMVolume.GetID()
-                clusterParams["referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
+                clusterParams["referenceVolume"] = VRTemplateNodeName.GetID()
                 clusterParams["outputVolume"] = outputVRLesionLabelNode.GetID()
                 clusterParams["dtiMap"] = "VolumeRatio"
                 clusterParams["mapResolution"] = templateDTIResolution
@@ -1389,8 +1333,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             #Perform Bayesian segmentation in FA map
             #
             bayesParams = {}
-            bayesParams["inputVolume"] = slicer.util.getNode('regTemplateInverseWarped')
-            bayesParams["referenceVolume"] = slicer.util.getNode(DTITemplateNodeName)
+            bayesParams["inputVolume"] = regTemplateInverseWarped.GetID()
+            bayesParams["referenceVolume"] = DTITemplateNode.GetID()
             bayesParams["mapType"] = "FractionalAnisotropy"
             bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
             bayesParams["mapResolution"] = templateDTIResolution
@@ -1406,8 +1350,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputMDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputBayesMDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(MDTemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = MDTemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1418,8 +1362,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputBayesMDinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputBayesMDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(MDTemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = MDTemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1432,7 +1376,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputMDLesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesMDinICBMVolume.GetID()
-                bayesParams["referenceVolume"] = slicer.util.getNode(MDTemplateNodeName)
+                bayesParams["referenceVolume"] = MDTemplateNodeName.GetID()
                 bayesParams["mapType"] = "MeanDiffusivity"
                 bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
@@ -1447,8 +1391,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputRAVolume_reg.GetID()
                 antsParams["outputVolume"] = inputBayesRAinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = RATemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1459,8 +1403,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputBayesRAinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputBayesRAinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = RATemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1473,7 +1417,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputRALesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesRAinICBMVolume.GetID()
-                bayesParams["referenceVolume"] = slicer.util.getNode(RATemplateNodeName)
+                bayesParams["referenceVolume"] = RATemplateNodeName.GetID()
                 bayesParams["mapType"] = "RelativeAnisotropy"
                 bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
@@ -1488,8 +1432,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputPerDVolume_reg.GetID()
                 antsParams["outputVolume"] = inputBayesPerDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = PerpDiffTemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1500,8 +1444,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputBayesPerDinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputBayesPerDinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = PerpDiffTemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1514,7 +1458,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputPerDLesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesPerDinICBMVolume.GetID()
-                bayesParams["referenceVolume"] = slicer.util.getNode(PerpDiffTemplateNodeName)
+                bayesParams["referenceVolume"] = PerpDiffTemplateNodeName.GetID()
                 bayesParams["mapType"] = "PerpendicularDiffusivity"
                 bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
@@ -1529,8 +1473,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputVRVolume_reg.GetID()
                 antsParams["outputVolume"] = inputBayesVRinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate1InverseWarp')
+                antsParams["referenceVolume"] = VRTemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate1InverseWarp
                 antsParams["typeOfField"] = "displacement"
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = False
@@ -1541,8 +1485,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 antsParams = {}
                 antsParams["inputVolume"] = inputBayesVRinICBMVolume.GetID()
                 antsParams["outputVolume"] = inputBayesVRinICBMVolume.GetID()
-                antsParams["referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
-                antsParams["transformationFile"] = slicer.util.getNode('regTemplate0GenericAffine')
+                antsParams["referenceVolume"] = VRTemplateNodeName.GetID()
+                antsParams["transformationFile"] = regTemplate0GenericAffine
                 antsParams["interpolationType"] = "linear"
                 antsParams["inverseITKTransformation"] = True
 
@@ -1555,7 +1499,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
                 slicer.mrmlScene.AddNode(outputVRLesionLabelNode)
                 bayesParams = {}
                 bayesParams["inputVolume"] = inputBayesVRinICBMVolume.GetID()
-                bayesParams["referenceVolume"] = slicer.util.getNode(VRTemplateNodeName)
+                bayesParams["referenceVolume"] = VRTemplateNodeName.GetID()
                 bayesParams["mapType"] = "VolumeRatio"
                 bayesParams["priorsImage"] = "Multiple Sclerosis Lesions"
                 bayesParams["mapResolution"] = templateDTIResolution
@@ -1623,7 +1567,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             # Patient FLAIR
             slicer.util.saveNode(inputFLAIRVolume_reg, folderSelector.directory + '/patient-FLAIR.nii.gz')
             # MNI Template
-            slicer.util.saveNode(slicer.util.getNode(T1TemplateBrain),folderSelector.directory + '/MNI-Template-T1.nii.gz')
+            slicer.util.saveNode(T1TemplateBrain,folderSelector.directory + '/MNI-Template-T1.nii.gz')
 
             # Use ANTs registration
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
@@ -1636,7 +1580,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             # Patient FLAIR
             slicer.util.saveNode(inputFLAIRVolume_reg, folderSelector.directory + '/patient-FLAIR.nii.gz')
             # MNI Template
-            slicer.util.saveNode(slicer.util.getNode(T1TemplateBrain),folderSelector.directory + '/MNI-Template-T1.nii.gz')
+            slicer.util.saveNode(T1TemplateBrain,folderSelector.directory + '/MNI-Template-T1.nii.gz')
 
             # Use ANTs registration
             os.system("chmod u+x " + home + "/MSLesionTrack-Data/diffeomorphicRegistration.sh")
@@ -1653,11 +1597,11 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         #
         slicer.util.showStatusMessage("Step 5/5: Merging DTI/T1/T2-FLAIR lesion map...")
         # Load structural label
-        slicer.util.loadVolume(folderSelector.directory + '/struct-lesion-label.nii.gz')  # T1 and T2-FLAIR Lesion Label in ICBM Space
+        (read,structLesionLabel)=slicer.util.loadVolume(folderSelector.directory + '/struct-lesion-label.nii.gz',{},True)  # T1 and T2-FLAIR Lesion Label in ICBM Space
 
         mergeLabels= {}
         mergeLabels["inputVolume1"] = outputLabelVolume.GetID()
-        mergeLabels["inputVolume2"] = slicer.util.getNode("struct-lesion-label")
+        mergeLabels["inputVolume2"] = structLesionLabel.GetID()
         mergeLabels["outputVolume"] = outputLabelVolume.GetID()
         mergeLabels["order"] = 0
 
@@ -1669,15 +1613,15 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
         if not outputICBMSpace.isChecked():
             slicer.util.showStatusMessage("Opt: Transforming label map to native space...")
             # Read registered images and tranforms
-            slicer.util.loadTransform(folderSelector.directory + '/regStruct1Warp.nii.gz')  # T1/FLAIR to native space
-            slicer.util.loadTransform(folderSelector.directory + '/regStruct0GenericAffine.mat')  # T1/FLAIR to native space
+            (read,regStruct1Warp)=slicer.util.loadTransform(folderSelector.directory + '/regStruct1Warp.nii.gz',True)  # T1/FLAIR to native space
+            (read,regStruct0GenericAffine)=slicer.util.loadTransform(folderSelector.directory + '/regStruct0GenericAffine.mat',True)  # T1/FLAIR to native space
 
             # Affine
             antsParams = {}
             antsParams["inputVolume"] = outputLabelVolume.GetID()
             antsParams["outputVolume"] = outputLabelVolume.GetID()
             antsParams["referenceVolume"] = inputT1Volume.GetID()
-            antsParams["transformationFile"] = slicer.util.getNode('regStruct0GenericAffine')
+            antsParams["transformationFile"] = regStruct0GenericAffine
             antsParams["interpolationType"] = "nn"
             antsParams["inverseITKTransformation"] = False
 
@@ -1688,7 +1632,7 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             antsParams["inputVolume"] = outputLabelVolume.GetID()
             antsParams["outputVolume"] = outputLabelVolume.GetID()
             antsParams["referenceVolume"] = inputT1Volume.GetID()
-            antsParams["transformationFile"] = slicer.util.getNode('regStruct1Warp')
+            antsParams["transformationFile"] = regStruct1Warp
             antsParams["typeOfField"] = "displacement"
             antsParams["interpolationType"] = "nn"
             antsParams["inverseITKTransformation"] = False
@@ -1696,6 +1640,8 @@ class DTILesionTrackLogic(ScriptedLoadableModuleLogic):
             slicer.cli.run(slicer.modules.resamplescalarvectordwivolume, None, antsParams, wait_for_completion=True)
 
         slicer.util.showStatusMessage("DTILesionTrack - Processing completed!")
+
+        #Delete all the unnecessary nodes
 
         return True
 

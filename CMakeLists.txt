@@ -18,8 +18,6 @@ include(${Slicer_USE_FILE})
 
 #-----------------------------------------------------------------------------
 # Extension modules
-add_subdirectory(BrainTissuesMask)
-add_subdirectory(BrainExtractionTool)
 add_subdirectory(DTILesionTrack)
 add_subdirectory(LSDPBrainSegmentation)
 add_subdirectory(BayesianDTISegmentation)
