@@ -24,12 +24,12 @@ class DTILesionTrack(ScriptedLoadableModule):
     def __init__(self, parent):
         ScriptedLoadableModule.__init__(self, parent)
         self.parent.title = "DTI Lesion Track"
-        self.parent.categories = ["Segmentation.MS Lesion Track"]
+        self.parent.categories = ["Segmentation"]
         self.parent.dependencies = []
         self.parent.contributors = [
             "Antonio Carlos da S. Senra Filho (University of Sao Paulo), Luiz Otavio Murta Junior (University of Sao Paulo)"]  # replace with "Firstname Lastname (Organization)"
         self.parent.helpText = """
-    This module aims to segment abnormals voxels from a multidimensional MRI data, resulting from T1, T2-FLAIR and DTI scalar maps
+    This module aims to detect abnormals voxels from a multidimensional MRI data, resulting from T1, T2-FLAIR and DTI scalar maps
      such as the fractional anisotropy (FA), mean diffusivity (MD) and others. This tool is optimized
       to analyse the lesion patterns observed in Multiple Sclerosis disease.
     """

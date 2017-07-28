@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category>Segmentation.MS Lesion Track</category>
+  <category>Utilities.CSIM Supporting Modules.MS Lesion Track</category>
   <title>Clustering Scalar Diffusion Segmentation</title>
   <description><![CDATA[This CLI module aims to segment the DTI lesion based on a series of cluster paradigm.]]></description>
   <version>0.0.1</version>

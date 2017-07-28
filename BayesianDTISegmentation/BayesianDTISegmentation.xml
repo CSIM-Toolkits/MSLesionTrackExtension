@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category>Segmentation.MS Lesion Track</category>
+  <category>Utilities.CSIM Supporting Modules.MS Lesion Track</category>
   <title>Bayesian DTI Segmentation</title>
   <description><![CDATA[This is a CLI module aims to segment multiple sclerosis brain lesions based on DTI scalar maps, namely FA, MD, Trace and others. This module apply the Baeysian classifier with spatial lesion distribution priors on the input image to select abnormal pixel variations in the white matter tissue. The user must provide the DTI map already registered with the ICBM standard space, which could be achieved using the ICBM-DTI-81 template.]]></description>
   <version>0.0.1</version>

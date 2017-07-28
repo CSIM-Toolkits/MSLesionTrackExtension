@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <executable>
-  <category>Segmentation.MS Lesion Track</category>
+  <category>Utilities.CSIM Supporting Modules.MS Lesion Track</category>
   <title>LSDP Brain Segmentation</title>
   <description><![CDATA[This is a CLI module aims to segment multiple sclerosis brain lesions using a statistical DTI voxel-wise inference based on statistical DTI atlas provided by USP-ICBM-131 template. The user must provide the DTI map already registered with the ICBM standard space, which could be achieved using the JHU-ICBM-DTI-81 or USP-DTI-131 templates. ]]></description>
   <version>0.0.1</version>
